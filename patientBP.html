@@ -737,7 +737,6 @@
       // Classify based on rounded values so color matches what the user sees displayed
       const s = Math.round(avgSys), d = Math.round(avgDia);
       if (s < PATIENT_GOAL.sys && d < PATIENT_GOAL.dia) return { bg: '#00C853', text: '#fff', label: 'At Goal' };
-      if (s < PATIENT_GOAL.sys + 5 && d < PATIENT_GOAL.dia + 5) return { bg: '#FFB300', text: '#fff', label: 'Near Goal' };
       return { bg: '#e53935', text: '#fff', label: 'Above Goal' };
     }
 

@@ -1296,7 +1296,9 @@
       const isBest = idx === 0;
       const isWorst = idx === scored.length - 1 && scored.length > 1;
       const rowBg = isBest ? 'background:rgba(0,200,100,.08);' : (isWorst && scored.length > 2) ? 'background:rgba(255,80,80,.06);' : '';
-      const rankIcon = isBest ? ' \u{1F3C6}' : '';
+      // Trophy only for a dominant winner: ≥50% at goal AND score gap ≥20 over #2
+      const scoreGap = scored.length > 1 ? scored[0].score - scored[1].score : 0;
+      const rankIcon = (isBest && p.green >= 50 && scoreGap >= 20) ? ' \u{1F3C6}' : '';
       const holdStyle = p.holdCount === maxHolds && p.holdCount > 0 ? 'color:#c62828; font-weight:700;' : '';
 
       // Build stacked bar with percentage labels inside segments

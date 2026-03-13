@@ -653,7 +653,18 @@
       else if (classifyPatient(best.sys,best.dia).green) cls = '<span style="color:#1b7a3d">At Goal</span>';
       else cls = '<span style="color:#b87800">Above Goal</span>';
       const notesClean = (best.notes||'').replace(/[;\-\u2014\u2013\s]+/g,' ').trim();
-      tip.innerHTML=`<div style="font-weight:700;margin-bottom:3px;font-size:15px;">${fmtDate(best.t)}</div><div style="font-size:15px;">BP: <b>${fmtBP(best.sys,best.dia)}</b> ${cls}</div><div style="font-size:15px;">HR: ${best.hr??'\u2014'} &bull; ${best.window}</div>${notesClean?'<div style="color:#444;margin-top:3px;font-size:14px;">'+notesClean+'</div>':''}`;
+      // Show individual readings when this is a merged (averaged) reading
+      let compHtml = '';
+      if (best.components && best.components.length > 1) {
+        compHtml = '<div style="margin-top:4px;padding-top:4px;border-top:1px solid rgba(0,0,0,.12);font-size:13px;color:#555;">';
+        compHtml += `<div style="font-weight:600;margin-bottom:2px;">Averaged from ${best.components.length} readings:</div>`;
+        for (const c of best.components) {
+          const timeStr = c.t.toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'});
+          compHtml += `<div>${timeStr} &mdash; ${fmtBP(c.sys,c.dia)}${c.hr!=null?' &bull; HR '+c.hr:''}</div>`;
+        }
+        compHtml += '</div>';
+      }
+      tip.innerHTML=`<div style="font-weight:700;margin-bottom:3px;font-size:15px;">${fmtDate(best.t)}</div><div style="font-size:15px;">BP: <b>${fmtBP(best.sys,best.dia)}</b>${best.mergedCount>1?' <span style="font-size:12px;color:#888;">(avg of '+best.mergedCount+')</span>':''} ${cls}</div><div style="font-size:15px;">HR: ${best.hr??'\u2014'} &bull; ${best.window}</div>${notesClean?'<div style="color:#444;margin-top:3px;font-size:14px;">'+notesClean+'</div>':''}${compHtml}`;
       tip.style.left=(e.clientX+14)+'px';tip.style.top=(e.clientY+14)+'px';tip.style.display='block';
     };
     canvas.onmouseleave=()=>{tip.style.display='none';};
@@ -723,15 +734,17 @@
 
     function statusColor(avgSys, avgDia) {
       if (avgSys == null || avgDia == null) return { bg: '#e0e0e0', text: '#555', label: '\u2014' };
-      if (avgSys < PATIENT_GOAL.sys && avgDia < PATIENT_GOAL.dia) return { bg: '#00C853', text: '#fff', label: 'At Goal' };
-      if (avgSys < PATIENT_GOAL.sys + 5 && avgDia < PATIENT_GOAL.dia + 5) return { bg: '#FFB300', text: '#fff', label: 'Near Goal' };
+      // Classify based on rounded values so color matches what the user sees displayed
+      const s = Math.round(avgSys), d = Math.round(avgDia);
+      if (s < PATIENT_GOAL.sys && d < PATIENT_GOAL.dia) return { bg: '#00C853', text: '#fff', label: 'At Goal' };
+      if (s < PATIENT_GOAL.sys + 5 && d < PATIENT_GOAL.dia + 5) return { bg: '#FFB300', text: '#fff', label: 'Near Goal' };
       return { bg: '#e53935', text: '#fff', label: 'Above Goal' };
     }
 
-    const amAvgSys = amReadings.length ? mean(amReadings.map(x=>x.sys)) : null;
-    const amAvgDia = amReadings.length ? mean(amReadings.map(x=>x.dia)) : null;
-    const pmAvgSys = pmReadings.length ? mean(pmReadings.map(x=>x.sys)) : null;
-    const pmAvgDia = pmReadings.length ? mean(pmReadings.map(x=>x.dia)) : null;
+    const amAvgSys = amReadings.length ? Math.round(mean(amReadings.map(x=>x.sys))) : null;
+    const amAvgDia = amReadings.length ? Math.round(mean(amReadings.map(x=>x.dia))) : null;
+    const pmAvgSys = pmReadings.length ? Math.round(mean(pmReadings.map(x=>x.sys))) : null;
+    const pmAvgDia = pmReadings.length ? Math.round(mean(pmReadings.map(x=>x.dia))) : null;
 
     const amStatus = statusColor(amAvgSys, amAvgDia);
     const pmStatus = statusColor(pmAvgSys, pmAvgDia);

@@ -846,7 +846,18 @@
       else if (best.green) cls = '<span style="color:#1b7a3d">Green</span>';
       else cls = '<span style="color:#b87800">Red</span>';
       const cleanNotes = (best.notes||'').replace(/[;\-\u2014\u2013\s]+/g,' ').trim();
-      tip.innerHTML=`<div style="font-weight:650;margin-bottom:2px">${fmtDate(best.t)}</div><div>BP: <b>${fmtBP(best.sys,best.dia)}</b> ${cls}</div><div>HR: ${best.hr??'—'} &bull; ${best.window}</div>${cleanNotes?'<div style="color:#5a6a7a;margin-top:2px">'+cleanNotes+'</div>':''}`;
+      // Show individual readings when this is a merged (averaged) reading
+      let compHtml = '';
+      if (best.components && best.components.length > 1) {
+        compHtml = '<div style="margin-top:3px;padding-top:3px;border-top:1px solid rgba(0,0,0,.12);font-size:11px;color:#666;">';
+        compHtml += `<div style="font-weight:600;margin-bottom:1px;">Averaged from ${best.components.length} readings:</div>`;
+        for (const c of best.components) {
+          const timeStr = c.t.toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'});
+          compHtml += `<div>${timeStr} \u2014 ${fmtBP(c.sys,c.dia)}${c.hr!=null?' \u2022 HR '+c.hr:''}</div>`;
+        }
+        compHtml += '</div>';
+      }
+      tip.innerHTML=`<div style="font-weight:650;margin-bottom:2px">${fmtDate(best.t)}</div><div>BP: <b>${fmtBP(best.sys,best.dia)}</b>${best.mergedCount>1?' <span style="font-size:10px;color:#888;">(avg of '+best.mergedCount+')</span>':''} ${cls}</div><div>HR: ${best.hr??'—'} &bull; ${best.window}</div>${cleanNotes?'<div style="color:#5a6a7a;margin-top:2px">'+cleanNotes+'</div>':''}${compHtml}`;
       tip.style.left=(e.clientX+14)+'px';tip.style.top=(e.clientY+14)+'px';tip.style.display='block';
     };
     canvas.onmouseleave=()=>{tip.style.display='none';};

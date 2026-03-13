@@ -653,13 +653,13 @@
       const barWBase=Math.max(3,(BASE_BAR_W/spanDays)*pw);
       const barWSevere=Math.max(5,(SEVERE_BAR_W/spanDays)*pw);
       const pad=4;
-      // Rectangular hit test against each bar
+      // Rectangular hit test against each bar (last match wins — matches draw order / z-order)
       let best=null;
       for(const r of rs){
         const bw=r.severe?barWSevere:barWBase;
         const cx=xOf(r.t.getTime());
         const yTop=yOf(r.sys), yBot=yOf(r.dia);
-        if(mx>=cx-bw/2-pad && mx<=cx+bw/2+pad && my>=yTop-pad && my<=yBot+pad){best=r;break;}
+        if(mx>=cx-bw/2-pad && mx<=cx+bw/2+pad && my>=yTop-pad && my<=yBot+pad) best=r;
       }
       if(!best){tip.style.display='none';return;}
       let cls;

@@ -652,14 +652,24 @@
       const spanDays=daysBetween(new Date(xMinMs),new Date(xMaxMs));
       const barWBase=Math.max(3,(BASE_BAR_W/spanDays)*pw);
       const barWSevere=Math.max(5,(SEVERE_BAR_W/spanDays)*pw);
-      const pad=4;
-      // Rectangular hit test against each bar (last match wins — matches draw order / z-order)
+      // Hit test: exact bar bounds first (last match = topmost drawn), then proximity fallback
       let best=null;
       for(const r of rs){
         const bw=r.severe?barWSevere:barWBase;
         const cx=xOf(r.t.getTime());
         const yTop=yOf(r.sys), yBot=yOf(r.dia);
-        if(mx>=cx-bw/2-pad && mx<=cx+bw/2+pad && my>=yTop-pad && my<=yBot+pad) best=r;
+        if(mx>=cx-bw/2 && mx<=cx+bw/2 && my>=yTop && my<=yBot) best=r;
+      }
+      // Fallback: if no exact hit, try with a small proximity zone so thin bars are still hoverable
+      if(!best){
+        const minHalf=Math.max(6,barWBase/2+2);
+        let bestD=Infinity;
+        for(const r of rs){
+          const cx=xOf(r.t.getTime());
+          const dx=Math.abs(mx-cx);
+          const yTop=yOf(r.sys), yBot=yOf(r.dia);
+          if(dx<=minHalf && my>=yTop-6 && my<=yBot+6 && dx<bestD){bestD=dx;best=r;}
+        }
       }
       if(!best){tip.style.display='none';return;}
       let cls;

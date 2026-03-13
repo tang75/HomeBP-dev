@@ -830,21 +830,30 @@
 
   function attachBPHover(canvas, rs, xMinMs, xMaxMs) {
     ensureTip();
-    const plotW=()=>{const r=canvas.getBoundingClientRect();return r.width-PAD.l-PAD.r;};
     canvas.onmousemove=e=>{
       if(!rs.length){tip.style.display='none';return;}
       const rect=canvas.getBoundingClientRect();
+      const W=rect.width, H=rect.height;
       const mx=(e.clientX-rect.left);
       const my=(e.clientY-rect.top);
       // Only show tooltip when mouse is within the plot area
-      if(mx<PAD.l||mx>rect.width-PAD.r||my<PAD.t||my>rect.height-PAD.b){tip.style.display='none';return;}
-      const pw=plotW();
+      if(mx<PAD.l||mx>W-PAD.r||my<PAD.t||my>H-PAD.b){tip.style.display='none';return;}
+      const pw=W-PAD.l-PAD.r, pH=H-PAD.t-PAD.b;
       const xOf=t=>PAD.l+((t-xMinMs)/Math.max(1,xMaxMs-xMinMs))*pw;
+      const yOf=v=>PAD.t+(1-(v-50)/(200-50))*pH;
       const spanDays=daysBetween(new Date(xMinMs),new Date(xMaxMs));
-      const barHalf=Math.max(4,(BASE_BAR_W/spanDays)*pw/2)+4;
-      let best=null,bestD=Infinity;
-      for(const r of rs){const dx=Math.abs(mx-xOf(r.t.getTime()));if(dx<bestD){bestD=dx;best=r;}}
-      if(!best||bestD>barHalf){tip.style.display='none';return;}
+      const barWBase=Math.max(3,(BASE_BAR_W/spanDays)*pw);
+      const barWSevere=Math.max(5,(SEVERE_BAR_W/spanDays)*pw);
+      const pad=4;
+      // Rectangular hit test against each bar
+      let best=null;
+      for(const r of rs){
+        const bw=r.severe?barWSevere:barWBase;
+        const cx=xOf(r.t.getTime());
+        const yTop=yOf(r.sys), yBot=yOf(r.dia);
+        if(mx>=cx-bw/2-pad && mx<=cx+bw/2+pad && my>=yTop-pad && my<=yBot+pad){best=r;break;}
+      }
+      if(!best){tip.style.display='none';return;}
       let cls;
       if (best.hypo) cls = '<span style="color:#7B1FA2"><b>HYPO</b></span>';
       else if (best.severe) cls = '<span style="color:#c62828"><b>SEVERE</b></span>';

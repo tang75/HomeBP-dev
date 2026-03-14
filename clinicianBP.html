@@ -324,11 +324,12 @@
           <div class="legend-item"><span class="legend-swatch" style="background:#900; border:1px solid #700;"></span> Severe (SBP ≥ 160 or DBP ≥ 100)</div>
           <div class="legend-item"><span style="font-weight:700; color:#1a73e8; font-size:13px;">Blue bold</span> New/restarted drug</div>
           <div class="legend-item"><span style="font-weight:700; color:#c0392b; font-size:13px;">Red bold</span> Changed dose/frequency</div>
+          <div class="legend-item"><span style="font-weight:700; color:var(--accent); font-size:13px;">Δ pp</span> Change in percentage points (not percent)</div>
         </div>
         <details class="no-print" style="margin-top:6px;">
           <summary style="cursor:pointer; font-weight:600; font-size:12px; color:var(--accent);">Methodology</summary>
           <div class="muted small" style="line-height:1.6; margin:8px 0;">
-            For each medication phase, statistics are computed from the <b>last N readings OR minimum phase window (whichever is longer)</b> before the next medication change, capturing the effect of that regimen at steady state. If fewer than N readings exist within the lookback window, all available readings are used. The final (current) row reports all readings within the <b>recent window</b>. The same recent window is used for the KPI dashboard on the Timeline tab. <span style="color:var(--accent)">Δ columns</span> show the change from the prior phase to help track treatment response. All parameters are configurable in the settings bar at the top of the page.
+            For each medication phase, statistics are computed from the <b>last N readings OR minimum phase window (whichever is longer)</b> before the next medication change, capturing the effect of that regimen at steady state. If fewer than N readings exist within the lookback window, all available readings are used. The final (current) row reports all readings within the <b>recent window</b>. The same recent window is used for the KPI dashboard on the Timeline tab. <span style="color:var(--accent)">Δ columns</span> show the change from the prior phase to help track treatment response. Δ pp = change in <b>percentage points</b> (e.g., 40% → 50% = +10 pp). All parameters are configurable in the settings bar at the top of the page.
           </div>
         </details>
       </div>
@@ -1162,7 +1163,7 @@
     let html = '<table class="phase-table"><thead><tr>';
     html += '<th>Phase</th><th>Statistics Window</th><th>Time of Day</th>';
     html += '<th>Mean SBP</th><th>&Delta; SBP</th><th>Mean DBP</th><th>&Delta; DBP</th>';
-    html += '<th>% Green</th><th>&Delta; %Grn</th><th>% Red</th><th>&Delta; %Red</th><th>% Severe</th><th>&Delta; %Sev</th><th>N</th><th># Holds</th>';
+    html += '<th>% Green</th><th>&Delta; pp</th><th>% Red</th><th>&Delta; pp</th><th>% Severe</th><th>&Delta; pp</th><th>N</th><th># Holds</th>';
     html += '</tr></thead><tbody>';
 
     for (let i = 0; i < tableRows.length; i++) {

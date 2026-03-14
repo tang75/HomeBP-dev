@@ -381,6 +381,7 @@
             👤 Patient Profile
             <span id="profileBadge" class="profile-badge empty">Not set</span>
           </span>
+          <a id="profileEditBtn" href="#" style="display:none; font-size:11px; font-weight:600; color:#1a73e8; text-decoration:none; margin-right:6px;">Edit ✏️</a>
           <span class="profile-chevron">&#x25BC;</span>
         </div>
         <div class="profile-body">
@@ -629,6 +630,7 @@
     const clearBtn = $('clearProfileBtn');
     const panel = $('profilePanel');
     const cta = $('profileCTA');
+    const editBtn = $('profileEditBtn');
     const set = isProfileSet(p);
     if (set) {
       badge.textContent = 'Profile loaded';
@@ -636,12 +638,14 @@
       if (clearBtn) clearBtn.style.display = 'inline-block';
       if (panel) panel.classList.remove('needs-profile');
       if (cta) { cta.textContent = 'Edit Profile →'; cta.style.color = '#1a73e8'; }
+      if (editBtn) editBtn.style.display = 'inline';
     } else {
       badge.textContent = 'Not set';
       badge.className = 'profile-badge empty';
       if (clearBtn) clearBtn.style.display = 'none';
       if (panel) panel.classList.add('needs-profile');
       if (cta) { cta.textContent = 'Set Patient Profile →'; cta.style.color = '#E65100'; }
+      if (editBtn) editBtn.style.display = 'none';
     }
   }
 
@@ -1683,6 +1687,37 @@
   // Rule-based analysis of BP patterns, medication responses,
   // circadian rhythms, and treatment options.
   // =============================================
+  // ── PubMed / Evidence references ──
+  const REFS = {
+    'SPRINT':        { short: 'SPRINT 2015', pmid: '26551272', title: 'SPRINT Research Group. N Engl J Med 2015' },
+    'Lancet2016':    { short: 'Ettehad 2016', pmid: '26559744', title: 'Ettehad et al. Lancet 2016 meta-analysis' },
+    'PROGRESS':      { short: 'PROGRESS 2001', pmid: '11588133', title: 'PROGRESS Collaborative Group. Lancet 2001' },
+    'UKPDS':         { short: 'UKPDS 38, 1998', pmid: '9742976', title: 'UKPDS Group. BMJ 1998' },
+    'SPRINT-CKD':    { short: 'Cheung 2017', pmid: '28352679', title: 'Cheung et al. J Am Soc Nephrol 2017 (SPRINT-CKD)' },
+    'KDIGO':         { short: 'KDIGO 2021', pmid: '33637192', title: 'KDIGO 2021 BP Guideline. Kidney Int 2021' },
+    'SAVE':          { short: 'SAVE 1992', pmid: '1386652', title: 'Pfeffer et al. N Engl J Med 1992' },
+    'VALIANT':       { short: 'VALIANT 2003', pmid: '14610160', title: 'Pfeffer et al. N Engl J Med 2003' },
+    'ALLHAT':        { short: 'ALLHAT 2002', pmid: '12479763', title: 'ALLHAT Officers. JAMA 2002' },
+    'HOPE':          { short: 'HOPE 2000', pmid: '10639539', title: 'Yusuf et al. N Engl J Med 2000' },
+    'Kario':         { short: 'Kario 2003', pmid: '12566146', title: 'Kario et al. Circulation 2003' },
+    'Rothwell':      { short: 'Rothwell 2010', pmid: '20226988', title: 'Rothwell et al. Lancet 2010' },
+    'MAPEC':         { short: 'Hermida 2010', pmid: '20479559', title: 'Hermida et al. Chronobiol Int 2010 (MAPEC)' },
+    'Hygia':         { short: 'Hermida 2020', pmid: '31641769', title: 'Hermida et al. Eur Heart J 2020 (Hygia)' },
+    'PATHWAY2':      { short: 'PATHWAY-2 2015', pmid: '26414968', title: 'Williams et al. Lancet 2015' },
+    'CIBIS2':        { short: 'CIBIS-II 1999', pmid: '9920355', title: 'CIBIS-II Investigators. Lancet 1999' },
+    'COPERNICUS':    { short: 'COPERNICUS 2001', pmid: '11386263', title: 'Packer et al. N Engl J Med 2001' },
+    'MERITHF':       { short: 'MERIT-HF 1999', pmid: '10376614', title: 'MERIT-HF Study Group. Lancet 1999' },
+    'NonDipping':    { short: 'Ohkubo 2002', pmid: '12186657', title: 'Ohkubo et al. Arch Intern Med 2002' },
+    'ISH':           { short: 'SHEP 1991', pmid: '2046253', title: 'SHEP Cooperative Research Group. JAMA 1991' },
+    'JCurve':        { short: 'Messerli 2006', pmid: '16785335', title: 'Messerli et al. J Am Coll Cardiol 2006 (J-curve)' },
+    'AHA2017':       { short: 'AHA/ACC 2017', pmid: '29133356', title: 'Whelton et al. Hypertension 2018 (AHA/ACC Guideline)' },
+  };
+  function cite(key) {
+    const r = REFS[key];
+    if (!r) return '';
+    return ` <a href="https://pubmed.ncbi.nlm.nih.gov/${r.pmid}/" target="_blank" rel="noopener" title="${r.title}" style="color:#1a73e8; text-decoration:none; font-size:10px; font-weight:600; vertical-align:super; cursor:pointer;">[${r.short}]</a>`;
+  }
+
   function generateClinicalInsights(d) {
     const insights = [];   // { category, priority (1=highest), icon, text }
     const treatments = []; // { text, rationale, confidence, preferred }
@@ -1736,10 +1771,10 @@
       const dbpOver = overallDBP - d.goal.dia;
       if (sbpOver >= 20 || dbpOver >= 15) {
         insights.push({ category: 'BP Patterns', priority: 1, icon: '🔴',
-          text: `<b>Substantially above target:</b> Mean ${overallSBP}/${overallDBP} is ${sbpOver > 0 ? '+' + sbpOver : sbpOver}/${dbpOver > 0 ? '+' + dbpOver : dbpOver} mmHg above goal (${d.goal.sys}/${d.goal.dia}). This sustained elevation is associated with significantly increased CVA and MI risk per SPRINT data. Each 10 mmHg SBP reduction → ~20% lower CVA, ~17% lower coronary events (Lancet 2016 meta-analysis).` });
+          text: `<b>Substantially above target:</b> Mean ${overallSBP}/${overallDBP} is ${sbpOver > 0 ? '+' + sbpOver : sbpOver}/${dbpOver > 0 ? '+' + dbpOver : dbpOver} mmHg above goal (${d.goal.sys}/${d.goal.dia}). This sustained elevation is associated with significantly increased CVA and MI risk.${cite('SPRINT')} Each 10 mmHg SBP reduction → ~20% lower CVA, ~17% lower coronary events.${cite('Lancet2016')}` });
       } else if (sbpOver >= 10 || dbpOver >= 10) {
         insights.push({ category: 'BP Patterns', priority: 2, icon: '🟠',
-          text: `<b>Moderately above target:</b> Mean ${overallSBP}/${overallDBP} is +${Math.max(sbpOver, dbpOver)} mmHg above goal. Each 10 mmHg SBP reduction → ~20% lower CVA risk, ~17% lower coronary events (Lancet 2016 meta-analysis).` });
+          text: `<b>Moderately above target:</b> Mean ${overallSBP}/${overallDBP} is +${Math.max(sbpOver, dbpOver)} mmHg above goal. Each 10 mmHg SBP reduction → ~20% lower CVA risk, ~17% lower coronary events.${cite('Lancet2016')}` });
       } else if (sbpOver > 0 || dbpOver > 0) {
         insights.push({ category: 'BP Patterns', priority: 4, icon: '🟡',
           text: `<b>Mildly above target:</b> Mean ${overallSBP}/${overallDBP} is close to goal (${d.goal.sys}/${d.goal.dia}). Fine-tuning may reach target without major regimen changes.` });
@@ -1751,20 +1786,20 @@
       // Comorbidity-specific risk amplification
       if (sbpOver > 0 && p.strokeTia) {
         insights.push({ category: 'BP Patterns', priority: 1, icon: '🧠',
-          text: `<b>Secondary stroke prevention:</b> With prior stroke/TIA, PROGRESS trial showed SBP reduction of ~9 mmHg reduced recurrent stroke by 28%. Current SBP is +${sbpOver} above target — aggressive lowering to &lt;130/80 is indicated.` });
+          text: `<b>Secondary stroke prevention:</b> With prior stroke/TIA, SBP reduction of ~9 mmHg reduced recurrent stroke by 28%.${cite('PROGRESS')} Current SBP is +${sbpOver} above target — aggressive lowering to &lt;130/80 is indicated.` });
       }
       if (sbpOver > 0 && p.diabetes) {
         insights.push({ category: 'BP Patterns', priority: 2, icon: '🩺',
-          text: `<b>Diabetes + HTN:</b> Coexisting diabetes amplifies CV risk ~2-fold. ADA recommends target &lt;130/80. Each 10 mmHg SBP reduction reduces microvascular complications ~13% (UKPDS). ACEi/ARB preferred for renal protection.` });
+          text: `<b>Diabetes + HTN:</b> Coexisting diabetes amplifies CV risk ~2-fold. ADA recommends target &lt;130/80. Each 10 mmHg SBP reduction reduces microvascular complications ~13%.${cite('UKPDS')} ACEi/ARB preferred for renal protection.${cite('HOPE')}` });
       }
       if (sbpOver > 0 && p.ckd) {
         const egfrNote = p.ckdEgfr ? ` (eGFR ${p.ckdEgfr} mL/min)` : '';
         insights.push({ category: 'BP Patterns', priority: 2, icon: '🫘',
-          text: `<b>CKD + HTN:</b> With chronic kidney disease${egfrNote}, uncontrolled HTN accelerates GFR decline. SPRINT-CKD showed intensive control (SBP &lt;120) slowed progression. Target &lt;130/80 per KDIGO.` });
+          text: `<b>CKD + HTN:</b> With chronic kidney disease${egfrNote}, uncontrolled HTN accelerates GFR decline. Intensive control (SBP &lt;120) slowed progression.${cite('SPRINT-CKD')} Target &lt;130/80.${cite('KDIGO')}` });
       }
       if (sbpOver > 0 && p.cad) {
         insights.push({ category: 'BP Patterns', priority: 2, icon: '❤️',
-          text: `<b>CAD + HTN:</b> With coronary artery disease, BP target &lt;130/80 is recommended (AHA/ACC 2017). Beta-blocker and ACEi/ARB are preferred for secondary prevention (SAVE, VALIANT).` });
+          text: `<b>CAD + HTN:</b> With coronary artery disease, BP target &lt;130/80 is recommended.${cite('AHA2017')} Beta-blocker and ACEi/ARB are preferred for secondary prevention.${cite('SAVE')}${cite('VALIANT')}` });
       }
     }
 
@@ -1786,7 +1821,7 @@
         const higherSBP = higher === 'morning' ? Math.round(d.mornMean) : Math.round(d.aeMean);
         const higherDBP = higher === 'morning' ? Math.round(d.mornMeanDBP) : Math.round(d.aeMeanDBP);
         insights.push({ category: 'BP Patterns', priority: 2, icon: '⏰',
-          text: `<b>Marked circadian asymmetry:</b> ${higher === 'morning' ? 'Morning' : 'Afternoon/evening'} BP (${higherSBP}/${higherDBP}) runs +${absDiff.toFixed(0)}/${absDiffDBP.toFixed(0)} mmHg higher. ${higher === 'morning' ? 'Morning surge is linked to increased CVA risk in the first hours after waking (Kario et al.) — consider evening dosing of long-acting agents.' : 'Afternoon/evening elevation may reflect medication wearing off (trough effect) or stress/activity patterns — consider split dosing or longer-acting formulations.'}` });
+          text: `<b>Marked circadian asymmetry:</b> ${higher === 'morning' ? 'Morning' : 'Afternoon/evening'} BP (${higherSBP}/${higherDBP}) runs +${absDiff.toFixed(0)}/${absDiffDBP.toFixed(0)} mmHg higher. ${higher === 'morning' ? 'Morning surge is linked to increased CVA risk in the first hours after waking' + cite('Kario') + ' — consider evening dosing of long-acting agents.' : 'Afternoon/evening elevation may reflect medication wearing off (trough effect) or stress/activity patterns — consider split dosing or longer-acting formulations.'}` });
       } else if (absDiff >= 5) {
         insights.push({ category: 'BP Patterns', priority: 3, icon: '⏰',
           text: `<b>Circadian pattern:</b> ${d.higherWindow === 'morning' ? 'Morning' : 'Afternoon/evening'} readings run +${absDiff.toFixed(0)} mmHg systolic higher. Moderate asymmetry — may warrant timing-specific dosing strategy.` });
@@ -1796,7 +1831,7 @@
       if (d.higherWindow === 'morning' && absDiff >= 8) {
         if (p.strokeTia) {
           insights.push({ category: 'BP Patterns', priority: 1, icon: '🌅',
-            text: `<b>Morning surge + prior stroke:</b> Morning BP surge in a patient with prior stroke/TIA is particularly concerning — stroke incidence peaks 6am–noon (Kario et al.). Strongly consider bedtime dosing of long-acting antihypertensives and evaluate for chronotherapy.` });
+            text: `<b>Morning surge + prior stroke:</b> Morning BP surge in a patient with prior stroke/TIA is particularly concerning — stroke incidence peaks 6am–noon.${cite('Kario')} Strongly consider bedtime dosing of long-acting antihypertensives and evaluate for chronotherapy.` });
         }
         if (p.afib) {
           insights.push({ category: 'BP Patterns', priority: 2, icon: '🌅',
@@ -1809,21 +1844,21 @@
     if (d.ae.length >= 5 && d.morning.length >= 5 && d.aeMean != null && d.mornMean != null) {
       if (d.aeMean >= d.mornMean - 2) {
         insights.push({ category: 'BP Patterns', priority: 3, icon: '🌙',
-          text: `<b>Possible non-dipping pattern:</b> Afternoon/evening BP (${Math.round(d.aeMean)}/${Math.round(d.aeMeanDBP)}) is not lower than morning (${Math.round(d.mornMean)}/${Math.round(d.mornMeanDBP)}). Non-dipping is associated with increased target-organ damage and CV events. Consider ambulatory BP monitoring (ABPM) for confirmation.` });
+          text: `<b>Possible non-dipping pattern:</b> Afternoon/evening BP (${Math.round(d.aeMean)}/${Math.round(d.aeMeanDBP)}) is not lower than morning (${Math.round(d.mornMean)}/${Math.round(d.mornMeanDBP)}). Non-dipping is associated with increased target-organ damage and CV events.${cite('NonDipping')} Consider ambulatory BP monitoring (ABPM) for confirmation.` });
       }
     }
 
     // 1e. Morning-specific severity
     if (d.mornSevPct != null && d.mornSevPct >= 15 && (d.aeSevPct == null || d.mornSevPct > d.aeSevPct + 10)) {
       insights.push({ category: 'BP Patterns', priority: 2, icon: '🌅',
-        text: `<b>Morning severe spike pattern:</b> ${d.mornSevPct.toFixed(0)}% of morning readings are severe vs ${(d.aeSevPct||0).toFixed(0)}% afternoon/evening. Morning BP surge is an independent CVA risk factor (Kario et al.). Consider bedtime dosing of long-acting ARB or CCB.` });
+        text: `<b>Morning severe spike pattern:</b> ${d.mornSevPct.toFixed(0)}% of morning readings are severe vs ${(d.aeSevPct||0).toFixed(0)}% afternoon/evening. Morning BP surge is an independent CVA risk factor.${cite('Kario')} Consider bedtime dosing of long-acting ARB or CCB.` });
     }
 
     // 1f. Isolated systolic hypertension
     if (overallSBP != null && overallSBP >= d.goal.sys + 5 && overallDBP < d.goal.dia) {
-      let ishText = `<b>Isolated systolic hypertension:</b> SBP ${overallSBP} above target while DBP ${overallDBP} is at goal. Responds best to CCBs and thiazide-like diuretics (ALLHAT/VALUE).`;
+      let ishText = `<b>Isolated systolic hypertension:</b> SBP ${overallSBP} above target while DBP ${overallDBP} is at goal. Responds best to CCBs and thiazide-like diuretics.${cite('ALLHAT')}${cite('ISH')}`;
       if (p.age != null && p.age >= 65) {
-        ishText += ` In elderly (age ${p.age}), ISH is driven by arterial stiffening. Caution with excessive DBP lowering (&lt;65 mmHg) — J-curve risk for coronary perfusion. Start low, go slow.`;
+        ishText += ` In elderly (age ${p.age}), ISH is driven by arterial stiffening. Caution with excessive DBP lowering (&lt;65 mmHg) — J-curve risk for coronary perfusion.${cite('JCurve')} Start low, go slow.`;
       }
       insights.push({ category: 'BP Patterns', priority: 3, icon: '📊', text: ishText });
     }
@@ -1844,19 +1879,19 @@
       const sbpSD = stddev(sbpValues);
       if (sbpSD >= 18) {
         insights.push({ category: 'BP Patterns', priority: 2, icon: '📈',
-          text: `<b>High BP variability:</b> SBP SD = ${sbpSD.toFixed(1)} mmHg. Visit-to-visit variability >15 mmHg is an independent stroke risk factor (Rothwell et al., Lancet 2010). CCBs tend to reduce BP variability more than other classes.` });
+          text: `<b>High BP variability:</b> SBP SD = ${sbpSD.toFixed(1)} mmHg. Visit-to-visit variability >15 mmHg is an independent stroke risk factor.${cite('Rothwell')} CCBs tend to reduce BP variability more than other classes.` });
       } else if (sbpSD >= 14) {
         insights.push({ category: 'BP Patterns', priority: 3, icon: '📈',
           text: `<b>Moderate BP variability:</b> SBP SD = ${sbpSD.toFixed(1)} mmHg. Evaluate adherence patterns, white-coat effect, and medication timing consistency.` });
       }
     }
 
-    // 1i. Hold events impact
+    // 1i. Hold events impact (past regimen observation — spans historical data)
     const totalHolds = d.holdEvents.length;
     const totalDays = d.rs.length > 1 ? Math.round(daysBetween(d.rs[0].t, d.rs[d.rs.length-1].t)) : 1;
     if (totalHolds >= 3) {
       const holdRate = (totalHolds / totalDays * 30).toFixed(1);
-      insights.push({ category: 'BP Patterns', priority: 3, icon: '⏸️',
+      insights.push({ category: 'Past Regimen Observations', priority: 3, icon: '⏸️',
         text: `<b>Frequent medication holds:</b> ${totalHolds} hold events over ${totalDays} days (~${holdRate}/month). Frequent holds disrupt steady-state drug levels and may contribute to BP variability. Investigate hold triggers (hypotension, bradycardia, procedures).` });
     }
 
@@ -1985,7 +2020,7 @@
         // Diabetes without RAAS blockade
         if (p.diabetes && !currentClassSet.has('arb') && !currentClassSet.has('acei') && overallSBP > d.goal.sys) {
           insights.push({ category: 'Med Correlations', priority: 2, icon: '💡',
-            text: `<b>Diabetes without RAAS blockade:</b> Patient has diabetes but is not on ACEi or ARB. RAAS blockade is first-line for diabetic nephropathy prevention (HOPE, MICRO-HOPE).` });
+            text: `<b>Diabetes without RAAS blockade:</b> Patient has diabetes but is not on ACEi or ARB. RAAS blockade is first-line for diabetic nephropathy prevention.${cite('HOPE')}` });
         }
       }
 
@@ -1993,7 +2028,7 @@
       if (overallSBP != null && overallSBP > d.goal.sys) {
         if (!currentClassSet.has('ccb') && !currentClassSet.has('diuretic') && classes.length < 3) {
           insights.push({ category: 'Med Correlations', priority: 3, icon: '💡',
-            text: `<b>Guideline consideration:</b> Current regimen does not include a CCB or diuretic. Per AHA/ACC, thiazide-like diuretics and CCBs are first-line with strong CVA/MI risk reduction evidence, particularly for isolated systolic HTN.` });
+            text: `<b>Guideline consideration:</b> Current regimen does not include a CCB or diuretic. Per AHA/ACC, thiazide-like diuretics and CCBs are first-line with strong CVA/MI risk reduction evidence, particularly for isolated systolic HTN.${cite('AHA2017')}${cite('ALLHAT')}` });
         }
       }
     }
@@ -2008,6 +2043,13 @@
     // 3. TREATMENT OPTIONS (personalized)
     // ══════════════════════════════════════════════
 
+    // Helper: check otherIntolerance free-text for drug mentions
+    const otherIntolLower = (p.otherIntolerance || '').toLowerCase();
+    function hasIntoleranceTo(drugNames) {
+      if (!otherIntolLower) return false;
+      return drugNames.some(d => otherIntolLower.includes(d.toLowerCase()));
+    }
+
     if (overallSBP != null && overallSBP > d.goal.sys) {
       const sbpGap = overallSBP - d.goal.sys;
 
@@ -2021,6 +2063,11 @@
       if (p.asthmaCopd) caution.add('beta');
       if (p.gout) caution.add('diuretic');
       if (p.ccbEdema) caution.add('ccb');
+      // Parse otherIntolerance free-text for drug class mentions
+      if (hasIntoleranceTo(['lisinopril','enalapril','ramipril','captopril','benazepril','fosinopril','quinapril','perindopril'])) caution.add('acei');
+      if (hasIntoleranceTo(['valsartan','losartan','candesartan','irbesartan','telmisartan','olmesartan'])) caution.add('arb');
+      if (hasIntoleranceTo(['metoprolol','atenolol','bisoprolol','carvedilol','propranolol','nebivolol','labetalol'])) caution.add('beta');
+      if (hasIntoleranceTo(['chlorthalidone','hydrochlorothiazide','hctz','indapamide','furosemide','torsemide'])) caution.add('diuretic');
       if (p.heartFailure && p.hfType === 'hfref') { prefer.add('acei'); prefer.add('arb'); prefer.add('beta'); }
       if (p.diabetes) { prefer.add('acei'); prefer.add('arb'); }
       if (p.ckd) { prefer.add('acei'); prefer.add('arb'); }
@@ -2036,28 +2083,57 @@
       // ── Option: Add CCB ──
       if (!currentClassSet.has('ccb') && !avoid.has('ccb')) {
         const drop = Math.min(sbpGap, currentDrugNames.length === 0 ? 12 : 8);
-        let rat = `CCBs reduce BP variability and are effective for ISH and morning surge. Expected SBP reduction: ~${drop}-${drop+4} mmHg.`;
-        let se = 'Watch for pedal edema, headache, flushing.';
-        let drugName = p.pregnancy ? 'nifedipine ER 30-60 mg qd' : 'amlodipine 5 mg qd';
         const ev = []; // evidence trail for confidence rationale
         if (currentClassSet.has('arb') || currentClassSet.has('acei')) ev.push('AHA/ACC combo therapy');
-        if (p.race === 'black') { rat += ' <i>Preferred first-line in Black patients (ALLHAT).</i>'; ev.push('ALLHAT'); }
-        if (p.pregnancy) { rat += ' <i>Nifedipine ER is safe in pregnancy.</i>'; ev.push('pregnancy-safe'); }
-        if (p.heartFailure && p.hfType === 'hfref') rat += ' <i>In HFrEF, use only DHP CCBs (amlodipine/felodipine).</i>';
-        let conf = ev.length > 0 ? 'High' : 'Moderate';
-        if (!ev.length) ev.push('AHA/ACC guideline class');
-        if (p.ccbEdema) { rat += ' <i>Prior CCB edema — consider lower dose or combo with ACEi/ARB (reduces CCB edema ~30%).</i>'; conf = 'Moderate'; ev.push('but prior edema'); }
-        treatments.push({ text: `<b>Add a CCB</b> (e.g., ${drugName})`, rationale: rat + ' ' + se, confidence: conf, confRationale: ev.join(', '), preferred: prefer.has('ccb') });
+
+        // Check intolerances: DHP (amlodipine edema), non-DHP (diltiazem, verapamil)
+        const dhpIntolerant = p.ccbEdema || hasIntoleranceTo(['amlodipine', 'nifedipine', 'felodipine']);
+        const nonDhpIntolerant = hasIntoleranceTo(['diltiazem', 'verapamil']);
+        const hfrefContraindNonDhp = p.heartFailure && p.hfType === 'hfref'; // non-DHP CCBs are ⛔ in HFrEF
+
+        let rat, se, drugName, conf;
+        if (dhpIntolerant && (nonDhpIntolerant || hfrefContraindNonDhp)) {
+          // Both DHP and non-DHP contraindicated — skip CCB entirely
+          rat = null;
+        } else if (dhpIntolerant && !hfrefContraindNonDhp) {
+          // DHP edema → switch to non-DHP
+          drugName = 'diltiazem ER 180-240 mg qd';
+          rat = `Non-DHP CCB selected due to prior DHP CCB edema.`;
+          if (nonDhpIntolerant) {
+            // Shouldn't reach here (caught above) but safety net
+            rat = null;
+          } else {
+            rat += ` Diltiazem provides 24-hour BP lowering with lower edema risk. Expected SBP reduction: ~${drop}-${drop+4} mmHg.`;
+            se = 'Watch for constipation, bradycardia (avoid combining with beta-blockers). Check heart rate.';
+            ev.push('guideline class, DHP intolerant');
+            conf = 'Moderate';
+          }
+        } else {
+          // Standard DHP recommendation
+          drugName = p.pregnancy ? 'nifedipine ER 30-60 mg qd' : 'amlodipine 5 mg qd';
+          rat = `CCBs reduce BP variability and are effective for ISH and morning surge. Expected SBP reduction: ~${drop}-${drop+4} mmHg.`;
+          se = 'Watch for pedal edema, headache, flushing.';
+          if (p.race === 'black') { rat += ' <i>Preferred first-line in Black patients.</i>' + cite('ALLHAT'); ev.push('ALLHAT'); }
+          if (p.pregnancy) { rat += ' <i>Nifedipine ER is safe in pregnancy.</i>'; ev.push('pregnancy-safe'); }
+          if (hfrefContraindNonDhp) rat += ' <i>In HFrEF, use only DHP CCBs (amlodipine/felodipine).</i>';
+          conf = ev.length > 0 ? 'High' : 'Moderate';
+          if (!ev.length) ev.push('AHA/ACC guideline class');
+        }
+        if (rat) {
+          treatments.push({ text: `<b>Add a CCB</b> (e.g., ${drugName})`, rationale: rat + ' ' + se, confidence: conf, confRationale: ev.join(', '), preferred: prefer.has('ccb') });
+        }
       }
 
       // ── Option: Add thiazide-like diuretic ──
       if (!currentClassSet.has('diuretic') && !avoid.has('diuretic')) {
-        let rat = 'Chlorthalidone has stronger 24-hour BP lowering than HCTZ and proven CVA reduction (ALLHAT).';
+        const diureticIntol = hasIntoleranceTo(['chlorthalidone', 'hydrochlorothiazide', 'hctz', 'indapamide']);
+        let rat = 'Chlorthalidone has stronger 24-hour BP lowering than HCTZ and proven CVA reduction.' + cite('ALLHAT');
         let se = 'Monitor K+, Na+, glucose, uric acid, renal function.';
         let drugName = 'chlorthalidone 12.5-25 mg qd';
         const ev = ['ALLHAT CVA reduction'];
-        if (p.race === 'black') { rat += ' <i>Preferred first-line in Black patients (ALLHAT).</i>'; ev.push('preferred for race'); }
+        if (p.race === 'black') { rat += ' <i>Preferred first-line in Black patients.</i>' + cite('ALLHAT'); ev.push('preferred for race'); }
         let conf = 'High';
+        if (diureticIntol) { rat += ` <i>NOTE: Patient reports intolerance to a thiazide-type diuretic (see "Other" intolerance field). Evaluate whether alternative diuretic or different class is more appropriate.</i>`; conf = 'Moderate'; ev.push('but reported diuretic intolerance'); }
         if (p.gout) { rat += ' <i>CAUTION: Patient has gout — thiazides raise uric acid. Consider losartan (uricosuric) instead.</i>'; conf = 'Low'; ev.length = 0; ev.push('ALLHAT evidence', 'but active gout contraindicates'); }
         if (p.ckd && p.ckdEgfr != null && p.ckdEgfr < 30) { rat += ' <i>eGFR &lt;30: use loop diuretic instead of thiazide.</i>'; drugName = 'furosemide 20-40 mg qd or torsemide 10-20 mg'; conf = 'Moderate'; ev.push('eGFR &lt;30 limits thiazide'); }
         if (p.diabetes) se += ' <i>Thiazides may worsen glucose — monitor HbA1c.</i>';
@@ -2082,12 +2158,12 @@
             se = 'ACEi: watch for cough (~10%), hyperkalemia. ARB: generally better tolerated.';
             ev.push('AHA/ACC first-line');
           }
-          if (p.diabetes) { rat += ' <i>Preferred in diabetes for renal protection (HOPE, MICRO-HOPE).</i>'; ev.push('HOPE'); }
-          if (p.ckd) { rat += ' <i>Reduces proteinuria and slows CKD progression.</i>'; ev.push('KDIGO renal protection'); }
-          if (p.cad) { rat += ' <i>Secondary CV prevention post-MI (SAVE, VALIANT).</i>'; ev.push('SAVE/VALIANT'); }
+          if (p.diabetes) { rat += ' <i>Preferred in diabetes for renal protection.</i>' + cite('HOPE'); ev.push('HOPE'); }
+          if (p.ckd) { rat += ' <i>Reduces proteinuria and slows CKD progression.</i>' + cite('KDIGO'); ev.push('KDIGO renal protection'); }
+          if (p.cad) { rat += ' <i>Secondary CV prevention post-MI.</i>' + cite('SAVE') + cite('VALIANT'); ev.push('SAVE/VALIANT'); }
           if (p.heartFailure) { rat += ' <i>Cornerstone of HF therapy — mortality reduction.</i>'; ev.push('HF mortality RCTs'); }
           if (p.gout && !avoid.has('acei')) rat += ' <i>Losartan specifically is uricosuric — beneficial in gout.</i>';
-          if (p.strokeTia) { rat += ' <i>Part of PROGRESS regimen (perindopril + indapamide) for secondary stroke prevention.</i>'; ev.push('PROGRESS'); }
+          if (p.strokeTia) { rat += ' <i>Part of PROGRESS regimen (perindopril + indapamide) for secondary stroke prevention.</i>' + cite('PROGRESS'); ev.push('PROGRESS'); }
           const conf = (p.diabetes || p.ckd || p.heartFailure || p.cad) ? 'High' : 'Moderate';
           treatments.push({ text: `<b>Add ${avoid.has('acei') ? 'an ARB' : 'an ACEi or ARB'}</b> (e.g., ${drugName})`, rationale: rat + ' ' + se, confidence: conf, confRationale: ev.join(', '), preferred: prefer.has('acei') || prefer.has('arb') });
         }
@@ -2109,6 +2185,13 @@
         let se = 'Watch for fatigue, bradycardia, exercise intolerance.';
         let conf = 'High';
         if (p.asthmaCopd) { rat += ' <i>CAUTION: Use only cardioselective agents (bisoprolol, nebivolol) due to asthma/COPD.</i>'; drugName = 'bisoprolol 2.5-5 mg qd'; se += ' Monitor for bronchospasm.'; conf = 'Moderate'; ev.push('but asthma/COPD caution'); }
+        // Check otherIntolerance for the specific BB being recommended
+        const bbDrugCheck = drugName.split(' ')[0].toLowerCase();
+        if (hasIntoleranceTo([bbDrugCheck])) {
+          rat += ` <i>NOTE: Patient reports intolerance to ${bbDrugCheck} — consider alternative beta-blocker.</i>`;
+          if (conf === 'High') conf = 'Moderate';
+          ev.push(`but ${bbDrugCheck} intolerance`);
+        }
         if (p.age != null && p.age >= 75) se += ' <i>Elderly: start very low, monitor for bradycardia and falls.</i>';
         treatments.push({ text: `<b>Add a beta-blocker</b> (e.g., ${drugName})`, rationale: rat + ' ' + se, confidence: conf, confRationale: ev.join(', '), preferred: true });
       }
@@ -2120,7 +2203,7 @@
 
       // ── Option: Bedtime dosing ──
       if (d.circDiff != null && d.higherWindow === 'morning' && Math.abs(d.circDiff) >= 8) {
-        treatments.push({ text: `<b>Shift dosing to bedtime</b>`, rationale: `Morning surge of +${Math.abs(d.circDiff).toFixed(0)} mmHg suggests trough effect at waking. MAPEC/Hygia trials showed bedtime dosing of ≥1 HTN med reduced CVA events ~45%. Move the longest-acting agent to HS.`, confidence: 'Moderate', confRationale: 'MAPEC/Hygia (some replication concerns)', preferred: false });
+        treatments.push({ text: `<b>Shift dosing to bedtime</b>`, rationale: `Morning surge of +${Math.abs(d.circDiff).toFixed(0)} mmHg suggests trough effect at waking. Bedtime dosing of ≥1 HTN med may reduce CVA events.${cite('MAPEC')}${cite('Hygia')} Move the longest-acting agent to HS.`, confidence: 'Moderate', confRationale: 'MAPEC/Hygia (some replication concerns)', preferred: false });
       }
 
       // ── Option: Spironolactone for resistant HTN ──
@@ -2129,7 +2212,7 @@
         const ev = ['PATHWAY-2 RCT'];
         let conf = 'High';
         if (p.ckd && p.ckdEgfr != null && p.ckdEgfr < 30) { mraNote = ' <i>CAUTION: eGFR &lt;30 — high hyperkalemia risk with MRA.</i>'; conf = 'Moderate'; ev.push('but eGFR &lt;30 risk'); }
-        treatments.push({ text: `<b>Consider spironolactone</b> (25-50 mg qd) for resistant HTN`, rationale: `On ≥3 agents with persistent uncontrolled BP. PATHWAY-2 showed spironolactone was the most effective add-on for resistant HTN, superior to bisoprolol and doxazosin. Monitor K+ closely.${mraNote}`, confidence: conf, confRationale: ev.join(', '), preferred: false });
+        treatments.push({ text: `<b>Consider spironolactone</b> (25-50 mg qd) for resistant HTN`, rationale: `On ≥3 agents with persistent uncontrolled BP. Spironolactone was the most effective add-on for resistant HTN, superior to bisoprolol and doxazosin.${cite('PATHWAY2')} Monitor K+ closely.${mraNote}`, confidence: conf, confRationale: ev.join(', '), preferred: false });
       }
 
       // ── Option: Pregnancy-specific ──
@@ -2150,10 +2233,10 @@
     if (!hasProfile && overallSBP != null && overallSBP > d.goal.sys) {
       insights.push({ category: 'Personalization', priority: 5, icon: '👤',
         text: `<b>Personalize these insights:</b> Fill in the <i>Patient Profile</i> above (age, sex, race, comorbidities) to unlock evidence-based recommendations tailored to this patient. Examples:<br>
-        &bull; <i>Black/African American</i> → CCB or thiazide-like diuretic preferred (ALLHAT)<br>
-        &bull; <i>Diabetes</i> → ACEi/ARB for renal protection (HOPE)<br>
-        &bull; <i>CKD</i> → eGFR-guided drug selection<br>
-        &bull; <i>HFrEF</i> → specific beta-blockers + RAAS blockade required<br>
+        &bull; <i>Black/African American</i> → CCB or thiazide-like diuretic preferred${cite('ALLHAT')}<br>
+        &bull; <i>Diabetes</i> → ACEi/ARB for renal protection${cite('HOPE')}<br>
+        &bull; <i>CKD</i> → eGFR-guided drug selection${cite('KDIGO')}<br>
+        &bull; <i>HFrEF</i> → specific beta-blockers + RAAS blockade required${cite('CIBIS2')}<br>
         &bull; <i>Asthma</i> → avoid non-selective beta-blockers<br>
         &bull; <i>Gout</i> → avoid thiazides, prefer losartan` });
     }
@@ -2191,8 +2274,9 @@
       if (p.otherIntolerance) alerts.push(p.otherIntolerance);
       if (alerts.length) parts.push('⚠️ ' + alerts.join(', '));
 
-      out += `<div style="padding:6px 10px; border-radius:8px; background:rgba(44,93,205,.06); border:1px solid rgba(44,93,205,.15); font-size:11px; color:var(--accent); margin-bottom:10px;">
-        <b>Personalized for:</b> ${parts.join(' · ')}
+      out += `<div style="padding:6px 10px; border-radius:8px; background:rgba(44,93,205,.06); border:1px solid rgba(44,93,205,.15); font-size:11px; color:var(--accent); margin-bottom:10px; display:flex; align-items:center; flex-wrap:wrap; gap:4px;">
+        <span><b>Personalized for:</b> ${parts.join(' · ')}</span>
+        <a href="#" class="profile-edit-link" onclick="event.preventDefault(); var p=document.getElementById('profilePanel'); if(!p.classList.contains('open')) p.classList.add('open'); p.scrollIntoView({behavior:'smooth',block:'start'});" style="margin-left:auto; font-size:10px; font-weight:600; color:#1a73e8; text-decoration:none; white-space:nowrap;">Edit Profile ✏️</a>
       </div>`;
     }
 
@@ -2200,8 +2284,8 @@
 
     // Sort and render insights by category
     insights.sort((a, b) => a.priority - b.priority);
-    const categories = ['BP Patterns', 'Med Correlations', 'Personalization'];
-    const catLabels = { 'BP Patterns': '📊 BP Pattern Insights', 'Med Correlations': '💊 Medication–BP Correlations', 'Personalization': '👤 Personalization' };
+    const categories = ['BP Patterns', 'Med Correlations', 'Past Regimen Observations', 'Personalization'];
+    const catLabels = { 'BP Patterns': '📊 BP Pattern Insights', 'Med Correlations': '💊 Medication–BP Correlations', 'Past Regimen Observations': '📋 Past Regimen Observations', 'Personalization': '👤 Personalization' };
     for (const cat of categories) {
       const items = insights.filter(i => i.category === cat);
       if (!items.length) continue;
@@ -2854,12 +2938,13 @@
 
   // Patient Profile event wiring
   $('profileToggle').addEventListener('click', () => { $('profilePanel').classList.toggle('open'); });
-  $('profileCTA').addEventListener('click', (e) => {
-    e.preventDefault();
+  function openProfilePanel() {
     const panel = $('profilePanel');
     if (!panel.classList.contains('open')) panel.classList.add('open');
     panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  });
+  }
+  $('profileCTA').addEventListener('click', (e) => { e.preventDefault(); openProfilePanel(); });
+  $('profileEditBtn').addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); openProfilePanel(); });
   $('ppCKD').addEventListener('change', () => { $('ppCKDSub').style.display = $('ppCKD').checked ? 'block' : 'none'; });
   $('ppHF').addEventListener('change', () => { $('ppHFSub').style.display = $('ppHF').checked ? 'block' : 'none'; });
   $('profileSaveBtn').addEventListener('click', saveProfile);

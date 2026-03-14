@@ -170,7 +170,8 @@
       .profile-header{ padding:2px 8px; }
     }
     /* Patient Profile Panel */
-    .profile-panel{ border:1px solid rgba(0,0,0,.10); border-radius:12px; background:rgba(0,0,0,.015); margin-bottom:14px; overflow:hidden; }
+    .profile-panel{ border:1px solid rgba(0,0,0,.10); border-radius:12px; background:rgba(0,0,0,.015); margin-bottom:14px; overflow:hidden; transition:border-color .3s; }
+    .profile-panel.needs-profile{ border-left:4px solid #F9A825; background:rgba(249,168,37,.04); }
     .profile-header{ display:flex; align-items:center; justify-content:space-between; padding:10px 14px; cursor:pointer; user-select:none; }
     .profile-header:hover{ background:rgba(0,0,0,.03); }
     .profile-title{ font-weight:650; font-size:13px; display:flex; align-items:center; gap:8px; }
@@ -370,6 +371,7 @@
       <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:4px;">
         <span style="font-weight:650; font-size:15px;">Clinical Insights Dashboard</span>
         <span id="insightsRange" style="display:inline-block; font-size:12px; font-weight:600; background:#e8f0fe; color:#1a73e8; padding:3px 10px; border-radius:12px;">&mdash;</span>
+        <a id="profileCTA" href="#" style="font-size:12px; font-weight:600; color:#1a73e8; text-decoration:none; margin-left:auto;">Set Patient Profile &rarr;</a>
       </div>
       <div class="hr"></div>
       <!-- Patient Profile Panel -->
@@ -625,14 +627,21 @@
   function updateProfileBadge(p) {
     const badge = $('profileBadge');
     const clearBtn = $('clearProfileBtn');
-    if (isProfileSet(p)) {
+    const panel = $('profilePanel');
+    const cta = $('profileCTA');
+    const set = isProfileSet(p);
+    if (set) {
       badge.textContent = 'Profile loaded';
       badge.className = 'profile-badge loaded';
       if (clearBtn) clearBtn.style.display = 'inline-block';
+      if (panel) panel.classList.remove('needs-profile');
+      if (cta) { cta.textContent = 'Edit Profile →'; cta.style.color = '#1a73e8'; }
     } else {
       badge.textContent = 'Not set';
       badge.className = 'profile-badge empty';
       if (clearBtn) clearBtn.style.display = 'none';
+      if (panel) panel.classList.add('needs-profile');
+      if (cta) { cta.textContent = 'Set Patient Profile →'; cta.style.color = '#E65100'; }
     }
   }
 
@@ -2019,103 +2028,120 @@
       if (p.strokeTia) { prefer.add('acei'); prefer.add('diuretic'); }
       if (p.cad) { prefer.add('beta'); prefer.add('acei'); prefer.add('arb'); }
 
+      // ── Confidence criteria ──
+      // HIGH:  ≥1 landmark RCT directly applicable to this patient's profile + no active contraindications
+      // MOD:   Guideline-recommended but no patient-specific RCT, OR strong evidence with a relative caution
+      // LOW:   Reasonable option but with active relative contraindication or weak/indirect evidence
+
       // ── Option: Add CCB ──
       if (!currentClassSet.has('ccb') && !avoid.has('ccb')) {
         const drop = Math.min(sbpGap, currentDrugNames.length === 0 ? 12 : 8);
         let rat = `CCBs reduce BP variability and are effective for ISH and morning surge. Expected SBP reduction: ~${drop}-${drop+4} mmHg.`;
-        let conf = (currentClassSet.has('arb') || currentClassSet.has('acei')) ? 'High' : 'Moderate';
         let se = 'Watch for pedal edema, headache, flushing.';
         let drugName = p.pregnancy ? 'nifedipine ER 30-60 mg qd' : 'amlodipine 5 mg qd';
-        if (p.race === 'black') { rat += ' <i>Preferred first-line in Black patients (ALLHAT).</i>'; conf = 'High'; }
-        if (p.pregnancy) rat += ' <i>Nifedipine ER is safe in pregnancy.</i>';
-        if (p.ccbEdema) { rat += ' <i>Prior CCB edema — consider lower dose or combo with ACEi/ARB (reduces CCB edema ~30%).</i>'; conf = 'Moderate'; }
+        const ev = []; // evidence trail for confidence rationale
+        if (currentClassSet.has('arb') || currentClassSet.has('acei')) ev.push('AHA/ACC combo therapy');
+        if (p.race === 'black') { rat += ' <i>Preferred first-line in Black patients (ALLHAT).</i>'; ev.push('ALLHAT'); }
+        if (p.pregnancy) { rat += ' <i>Nifedipine ER is safe in pregnancy.</i>'; ev.push('pregnancy-safe'); }
         if (p.heartFailure && p.hfType === 'hfref') rat += ' <i>In HFrEF, use only DHP CCBs (amlodipine/felodipine).</i>';
-        treatments.push({ text: `<b>Add a CCB</b> (e.g., ${drugName})`, rationale: rat + ' ' + se, confidence: conf, preferred: prefer.has('ccb') });
+        let conf = ev.length > 0 ? 'High' : 'Moderate';
+        if (!ev.length) ev.push('AHA/ACC guideline class');
+        if (p.ccbEdema) { rat += ' <i>Prior CCB edema — consider lower dose or combo with ACEi/ARB (reduces CCB edema ~30%).</i>'; conf = 'Moderate'; ev.push('but prior edema'); }
+        treatments.push({ text: `<b>Add a CCB</b> (e.g., ${drugName})`, rationale: rat + ' ' + se, confidence: conf, confRationale: ev.join(', '), preferred: prefer.has('ccb') });
       }
 
       // ── Option: Add thiazide-like diuretic ──
       if (!currentClassSet.has('diuretic') && !avoid.has('diuretic')) {
         let rat = 'Chlorthalidone has stronger 24-hour BP lowering than HCTZ and proven CVA reduction (ALLHAT).';
-        let conf = 'High';
         let se = 'Monitor K+, Na+, glucose, uric acid, renal function.';
         let drugName = 'chlorthalidone 12.5-25 mg qd';
-        if (p.race === 'black') { rat += ' <i>Preferred first-line in Black patients (ALLHAT).</i>'; }
-        if (p.gout) { rat += ' <i>CAUTION: Patient has gout — thiazides raise uric acid. Consider losartan (uricosuric) instead.</i>'; conf = 'Low'; }
-        if (p.ckd && p.ckdEgfr != null && p.ckdEgfr < 30) { rat += ' <i>eGFR &lt;30: use loop diuretic instead of thiazide.</i>'; drugName = 'furosemide 20-40 mg qd or torsemide 10-20 mg'; conf = 'Moderate'; }
+        const ev = ['ALLHAT CVA reduction'];
+        if (p.race === 'black') { rat += ' <i>Preferred first-line in Black patients (ALLHAT).</i>'; ev.push('preferred for race'); }
+        let conf = 'High';
+        if (p.gout) { rat += ' <i>CAUTION: Patient has gout — thiazides raise uric acid. Consider losartan (uricosuric) instead.</i>'; conf = 'Low'; ev.length = 0; ev.push('ALLHAT evidence', 'but active gout contraindicates'); }
+        if (p.ckd && p.ckdEgfr != null && p.ckdEgfr < 30) { rat += ' <i>eGFR &lt;30: use loop diuretic instead of thiazide.</i>'; drugName = 'furosemide 20-40 mg qd or torsemide 10-20 mg'; conf = 'Moderate'; ev.push('eGFR &lt;30 limits thiazide'); }
         if (p.diabetes) se += ' <i>Thiazides may worsen glucose — monitor HbA1c.</i>';
         if (p.age != null && p.age >= 75) se += ' <i>Elderly: monitor for orthostatic hypotension.</i>';
-        treatments.push({ text: `<b>Add a ${p.ckd && p.ckdEgfr && p.ckdEgfr < 30 ? 'loop' : 'thiazide-like'} diuretic</b> (e.g., ${drugName})`, rationale: rat + ' ' + se, confidence: conf, preferred: prefer.has('diuretic') });
+        treatments.push({ text: `<b>Add a ${p.ckd && p.ckdEgfr && p.ckdEgfr < 30 ? 'loop' : 'thiazide-like'} diuretic</b> (e.g., ${drugName})`, rationale: rat + ' ' + se, confidence: conf, confRationale: ev.join(', '), preferred: prefer.has('diuretic') });
       }
 
       // ── Option: Add ACEi/ARB ──
       if (!currentClassSet.has('arb') && !currentClassSet.has('acei')) {
         if (!avoid.has('acei') || !avoid.has('arb')) {
           let drugName, rat, se;
+          const ev = [];
           if (avoid.has('acei')) {
             drugName = p.gout ? 'losartan 50-100 mg qd (uricosuric)' : 'valsartan 80-160 mg qd';
             rat = 'ARB selected — ACEi avoided due to ' + (p.angioedemaHistory ? 'angioedema history' : 'cough intolerance') + '.';
             se = 'Monitor K+ and creatinine. Contraindicated in pregnancy.';
             if (p.angioedemaHistory) se += ' ~2% cross-reactivity for angioedema with ARBs — monitor closely.';
+            ev.push('AHA/ACC first-line');
           } else {
             drugName = 'lisinopril 10-20 mg or valsartan 80-160 mg';
             rat = 'RAAS blockade is first-line per AHA/ACC guidelines. Expected SBP reduction: ~8-12 mmHg.';
             se = 'ACEi: watch for cough (~10%), hyperkalemia. ARB: generally better tolerated.';
+            ev.push('AHA/ACC first-line');
           }
-          if (p.diabetes) rat += ' <i>Preferred in diabetes for renal protection (HOPE, MICRO-HOPE).</i>';
-          if (p.ckd) rat += ' <i>Reduces proteinuria and slows CKD progression.</i>';
-          if (p.cad) rat += ' <i>Secondary CV prevention post-MI (SAVE, VALIANT).</i>';
-          if (p.heartFailure) rat += ' <i>Cornerstone of HF therapy — mortality reduction.</i>';
+          if (p.diabetes) { rat += ' <i>Preferred in diabetes for renal protection (HOPE, MICRO-HOPE).</i>'; ev.push('HOPE'); }
+          if (p.ckd) { rat += ' <i>Reduces proteinuria and slows CKD progression.</i>'; ev.push('KDIGO renal protection'); }
+          if (p.cad) { rat += ' <i>Secondary CV prevention post-MI (SAVE, VALIANT).</i>'; ev.push('SAVE/VALIANT'); }
+          if (p.heartFailure) { rat += ' <i>Cornerstone of HF therapy — mortality reduction.</i>'; ev.push('HF mortality RCTs'); }
           if (p.gout && !avoid.has('acei')) rat += ' <i>Losartan specifically is uricosuric — beneficial in gout.</i>';
-          if (p.strokeTia) rat += ' <i>Part of PROGRESS regimen (perindopril + indapamide) for secondary stroke prevention.</i>';
+          if (p.strokeTia) { rat += ' <i>Part of PROGRESS regimen (perindopril + indapamide) for secondary stroke prevention.</i>'; ev.push('PROGRESS'); }
           const conf = (p.diabetes || p.ckd || p.heartFailure || p.cad) ? 'High' : 'Moderate';
-          treatments.push({ text: `<b>Add ${avoid.has('acei') ? 'an ARB' : 'an ACEi or ARB'}</b> (e.g., ${drugName})`, rationale: rat + ' ' + se, confidence: conf, preferred: prefer.has('acei') || prefer.has('arb') });
+          treatments.push({ text: `<b>Add ${avoid.has('acei') ? 'an ARB' : 'an ACEi or ARB'}</b> (e.g., ${drugName})`, rationale: rat + ' ' + se, confidence: conf, confRationale: ev.join(', '), preferred: prefer.has('acei') || prefer.has('arb') });
         }
       }
 
       // ── Option: Add beta-blocker (only with compelling indication) ──
       if (!currentClassSet.has('beta') && (p.cad || (p.heartFailure && p.hfType === 'hfref') || p.afib) && !avoid.has('beta')) {
         const indications = [];
+        const ev = [];
         let drugName = 'metoprolol succinate 25-50 mg qd';
-        if (p.cad) indications.push('CAD/post-MI (mortality reduction)');
+        if (p.cad) { indications.push('CAD/post-MI (mortality reduction)'); ev.push('post-MI RCTs'); }
         if (p.heartFailure && p.hfType === 'hfref') {
           indications.push('HFrEF (~35% mortality reduction)');
           drugName = 'carvedilol 3.125 mg BID or bisoprolol 1.25 mg qd (start low, uptitrate)';
+          ev.push('CIBIS-II, COPERNICUS, MERIT-HF');
         }
-        if (p.afib) indications.push('afib rate control');
+        if (p.afib) { indications.push('afib rate control'); ev.push('rate control guideline'); }
         let rat = 'Beta-blocker indicated for: ' + indications.join('; ') + '.';
         let se = 'Watch for fatigue, bradycardia, exercise intolerance.';
-        if (p.asthmaCopd) { rat += ' <i>CAUTION: Use only cardioselective agents (bisoprolol, nebivolol) due to asthma/COPD.</i>'; drugName = 'bisoprolol 2.5-5 mg qd'; se += ' Monitor for bronchospasm.'; }
+        let conf = 'High';
+        if (p.asthmaCopd) { rat += ' <i>CAUTION: Use only cardioselective agents (bisoprolol, nebivolol) due to asthma/COPD.</i>'; drugName = 'bisoprolol 2.5-5 mg qd'; se += ' Monitor for bronchospasm.'; conf = 'Moderate'; ev.push('but asthma/COPD caution'); }
         if (p.age != null && p.age >= 75) se += ' <i>Elderly: start very low, monitor for bradycardia and falls.</i>';
-        treatments.push({ text: `<b>Add a beta-blocker</b> (e.g., ${drugName})`, rationale: rat + ' ' + se, confidence: 'High', preferred: true });
+        treatments.push({ text: `<b>Add a beta-blocker</b> (e.g., ${drugName})`, rationale: rat + ' ' + se, confidence: conf, confRationale: ev.join(', '), preferred: true });
       }
 
       // ── Option: Uptitrate current ──
       if (currentDrugNames.length > 0 && sbpGap <= 15) {
-        treatments.push({ text: `<b>Uptitrate current regimen</b>`, rationale: `Gap of only ${sbpGap} mmHg to goal — dose optimization of existing agents may suffice. Half of maximal BP lowering occurs at half the maximal dose.`, confidence: 'Moderate', preferred: false });
+        treatments.push({ text: `<b>Uptitrate current regimen</b>`, rationale: `Gap of only ${sbpGap} mmHg to goal — dose optimization of existing agents may suffice. Half of maximal BP lowering occurs at half the maximal dose.`, confidence: 'Moderate', confRationale: 'dose-response pharmacology, no specific RCT', preferred: false });
       }
 
       // ── Option: Bedtime dosing ──
       if (d.circDiff != null && d.higherWindow === 'morning' && Math.abs(d.circDiff) >= 8) {
-        treatments.push({ text: `<b>Shift dosing to bedtime</b>`, rationale: `Morning surge of +${Math.abs(d.circDiff).toFixed(0)} mmHg suggests trough effect at waking. MAPEC/Hygia trials showed bedtime dosing of ≥1 HTN med reduced CVA events ~45%. Move the longest-acting agent to HS.`, confidence: 'Moderate', preferred: false });
+        treatments.push({ text: `<b>Shift dosing to bedtime</b>`, rationale: `Morning surge of +${Math.abs(d.circDiff).toFixed(0)} mmHg suggests trough effect at waking. MAPEC/Hygia trials showed bedtime dosing of ≥1 HTN med reduced CVA events ~45%. Move the longest-acting agent to HS.`, confidence: 'Moderate', confRationale: 'MAPEC/Hygia (some replication concerns)', preferred: false });
       }
 
       // ── Option: Spironolactone for resistant HTN ──
       if (currentDrugNames.length >= 3 && sbpGap > 5) {
         let mraNote = '';
-        if (p.ckd && p.ckdEgfr != null && p.ckdEgfr < 30) mraNote = ' <i>CAUTION: eGFR &lt;30 — high hyperkalemia risk with MRA.</i>';
-        treatments.push({ text: `<b>Consider spironolactone</b> (25-50 mg qd) for resistant HTN`, rationale: `On ≥3 agents with persistent uncontrolled BP. PATHWAY-2 showed spironolactone was the most effective add-on for resistant HTN, superior to bisoprolol and doxazosin. Monitor K+ closely.${mraNote}`, confidence: 'High', preferred: false });
+        const ev = ['PATHWAY-2 RCT'];
+        let conf = 'High';
+        if (p.ckd && p.ckdEgfr != null && p.ckdEgfr < 30) { mraNote = ' <i>CAUTION: eGFR &lt;30 — high hyperkalemia risk with MRA.</i>'; conf = 'Moderate'; ev.push('but eGFR &lt;30 risk'); }
+        treatments.push({ text: `<b>Consider spironolactone</b> (25-50 mg qd) for resistant HTN`, rationale: `On ≥3 agents with persistent uncontrolled BP. PATHWAY-2 showed spironolactone was the most effective add-on for resistant HTN, superior to bisoprolol and doxazosin. Monitor K+ closely.${mraNote}`, confidence: conf, confRationale: ev.join(', '), preferred: false });
       }
 
       // ── Option: Pregnancy-specific ──
       if (p.pregnancy && !currentDrugNames.some(dn => ['methyldopa','labetalol','nifedipine'].some(safe => dn.toLowerCase().includes(safe)))) {
-        treatments.push({ text: `<b>Switch to pregnancy-safe regimen</b>`, rationale: 'ACEi, ARBs, and direct renin inhibitors are teratogenic. Safe options: methyldopa 250-500 mg BID-TID, labetalol 100-200 mg BID-TID, or nifedipine ER 30-60 mg qd. Target &lt;140/90 (or &lt;135/85 per NICE).', confidence: 'High', preferred: true });
+        treatments.push({ text: `<b>Switch to pregnancy-safe regimen</b>`, rationale: 'ACEi, ARBs, and direct renin inhibitors are teratogenic. Safe options: methyldopa 250-500 mg BID-TID, labetalol 100-200 mg BID-TID, or nifedipine ER 30-60 mg qd. Target &lt;140/90 (or &lt;135/85 per NICE).', confidence: 'High', confRationale: 'ACOG/NICE guidelines, established safety data', preferred: true });
       }
 
       // ── Option: Switch class if poor response ──
       if (d.validPhases.length >= 2) {
         const lastPhase = d.validPhases[d.validPhases.length - 1];
         if (lastPhase.all.green < 30 && lastPhase.all.severe > 10) {
-          treatments.push({ text: `<b>Consider switching drug class</b>`, rationale: `Current regimen yields only ${lastPhase.all.green.toFixed(0)}% at-goal with ${lastPhase.all.severe.toFixed(0)}% severe. Poor response after adequate trial suggests pharmacogenomic or physiologic mismatch. Switch to a different mechanism.`, confidence: 'Moderate', preferred: false });
+          treatments.push({ text: `<b>Consider switching drug class</b>`, rationale: `Current regimen yields only ${lastPhase.all.green.toFixed(0)}% at-goal with ${lastPhase.all.severe.toFixed(0)}% severe. Poor response after adequate trial suggests pharmacogenomic or physiologic mismatch. Switch to a different mechanism.`, confidence: 'Moderate', confRationale: 'clinical judgment, patient response data', preferred: false });
         }
       }
     }
@@ -2205,7 +2231,7 @@
         const borderColor = t.preferred ? '#1565C0' : '#78909C';
         const prefTag = t.preferred ? ' <span style="background:#1565C0;color:#fff;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:700;">PREFERRED</span>' : '';
         out += `<div style="padding:8px 12px; border-left:4px solid ${borderColor}; background:rgba(21,101,192,.04); border-radius:0 6px 6px 0; font-size:12px; line-height:1.6;">`;
-        out += `${t.text}${prefTag} <span style="color:${confColor}; font-size:11px; font-weight:600;">[${t.confidence} confidence]</span>`;
+        out += `${t.text}${prefTag} <span style="color:${confColor}; font-size:11px; font-weight:600;">[${t.confidence}${t.confRationale ? ' — ' + t.confRationale : ''}]</span>`;
         out += `<div style="color:var(--muted); margin-top:3px; font-size:11px;">${t.rationale}</div>`;
         out += '</div>';
       }
@@ -2828,6 +2854,12 @@
 
   // Patient Profile event wiring
   $('profileToggle').addEventListener('click', () => { $('profilePanel').classList.toggle('open'); });
+  $('profileCTA').addEventListener('click', (e) => {
+    e.preventDefault();
+    const panel = $('profilePanel');
+    if (!panel.classList.contains('open')) panel.classList.add('open');
+    panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
   $('ppCKD').addEventListener('change', () => { $('ppCKDSub').style.display = $('ppCKD').checked ? 'block' : 'none'; });
   $('ppHF').addEventListener('change', () => { $('ppHFSub').style.display = $('ppHF').checked ? 'block' : 'none'; });
   $('profileSaveBtn').addEventListener('click', saveProfile);

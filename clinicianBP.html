@@ -1992,16 +1992,12 @@
     const isNonDefault = prof !== 'us';
 
     if (isCustom) {
-      // Custom: show custom inputs, amber highlight on both pills
-      goalPill.style.cssText = 'display:inline-flex; gap:8px; align-items:center; padding:6px 10px; border-radius:999px; border:2px solid #E65100; background:rgba(230,81,0,.10);';
-      customPill.style.cssText = 'display:inline-flex; gap:8px; align-items:center; padding:6px 10px; border-radius:999px; border:2px solid #E65100; background:rgba(230,81,0,.10);';
-    } else if (isNonDefault) {
-      // WHO or other non-default: blue highlight on goal pill, hide custom
-      goalPill.style.cssText = 'display:inline-flex; gap:8px; align-items:center; padding:6px 10px; border-radius:999px; border:2px solid #1565C0; background:rgba(21,101,192,.10);';
-      customPill.style.cssText = 'display:none;';
+      // Custom: show custom inputs, strong red/amber highlight — must not be missed
+      goalPill.style.cssText = 'display:inline-flex; gap:8px; align-items:center; padding:6px 10px; border-radius:999px; border:2px solid #C62828; background:rgba(198,40,40,.10);';
+      customPill.style.cssText = 'display:inline-flex; gap:8px; align-items:center; padding:6px 10px; border-radius:999px; border:2px solid #C62828; background:rgba(198,40,40,.10);';
     } else {
-      // US default: normal styling, hide custom
-      goalPill.style.cssText = '';
+      // Standard (US/WHO): subtle dark blue with shadow so it always stands out
+      goalPill.style.cssText = 'display:inline-flex; gap:8px; align-items:center; padding:6px 10px; border-radius:999px; border:2px solid #1565C0; background:rgba(21,101,192,.08); box-shadow:0 1px 4px rgba(21,101,192,.25);';
       customPill.style.cssText = 'display:none;';
     }
   }

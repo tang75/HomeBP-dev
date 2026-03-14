@@ -202,8 +202,8 @@
         <span class="muted small">to</span>
         <input id="amEnd" type="number" min="0" max="23" value="12" style="width:60px" />
       </div>
-      <div class="pill">
-        <label>Goal</label>
+      <div class="pill" id="goalPill">
+        <label style="font-weight:700;">Goal</label>
         <select id="profile">
           <option value="us" selected>US (&lt;130/80)</option>
           <option value="who">WHO (&lt;140/90)</option>
@@ -211,7 +211,7 @@
         </select>
       </div>
       <div class="pill" id="customGoalPill" style="display:none">
-        <label>Custom</label>
+        <label style="font-weight:700;">Custom</label>
         <input id="goalSys" type="number" value="135" style="width:70px" />
         <span class="muted small">/</span>
         <input id="goalDia" type="number" value="85" style="width:70px" />
@@ -1128,6 +1128,11 @@
         unifiedDateLabel = `${fmtDateShort(allReadings[0].t)} – ${fmtDateShort(allReadings[allReadings.length-1].t)}`;
       }
 
+      // Count holds in this phase
+      const phaseStart = boundaries[bi].date;
+      const phaseEnd = isLast ? new Date(rs[rs.length-1].t.getTime() + 86400000) : boundaries[bi+1].date;
+      const phaseHoldCount = holdEvents.filter(h => h.getTime() >= phaseStart.getTime() && h.getTime() < phaseEnd.getTime()).length;
+
       for (const w of windows) {
         const s = phaseStatsFromReadings(subsets[w]);
         const d_mean = (prev[w] && s.meanSBP != null && prev[w].meanSBP != null) ? s.meanSBP - prev[w].meanSBP : null;
@@ -1135,7 +1140,7 @@
         const d_sev = (prev[w] && s.severe != null && prev[w].severe != null) ? s.severe - prev[w].severe : null;
         const d_green = (prev[w] && s.green != null && prev[w].green != null) ? s.green - prev[w].green : null;
         const d_red = (prev[w] && s.red != null && prev[w].red != null) ? s.red - prev[w].red : null;
-        tableRows.push({ phase: phaseLabel, dateLabel: unifiedDateLabel, window: w, ...s, d_mean, d_meanDBP, d_sev, d_green, d_red, isRecent: isLast });
+        tableRows.push({ phase: phaseLabel, dateLabel: unifiedDateLabel, window: w, ...s, d_mean, d_meanDBP, d_sev, d_green, d_red, isRecent: isLast, holdCount: phaseHoldCount });
         prev[w] = s;
       }
     }
@@ -1156,8 +1161,8 @@
 
     let html = '<table class="phase-table"><thead><tr>';
     html += '<th>Phase</th><th>Statistics Window</th><th>Time of Day</th>';
-    html += '<th>Mean SBP</th><th>Mean DBP</th><th>&Delta; SBP</th><th>&Delta; DBP</th>';
-    html += '<th>% Green</th><th>&Delta; %Grn</th><th>% Red</th><th>&Delta; %Red</th><th>% Severe</th><th>&Delta; %Sev</th><th>N</th>';
+    html += '<th>Mean SBP</th><th>&Delta; SBP</th><th>Mean DBP</th><th>&Delta; DBP</th>';
+    html += '<th>% Green</th><th>&Delta; %Grn</th><th>% Red</th><th>&Delta; %Red</th><th>% Severe</th><th>&Delta; %Sev</th><th>N</th><th># Holds</th>';
     html += '</tr></thead><tbody>';
 
     for (let i = 0; i < tableRows.length; i++) {
@@ -1218,15 +1223,21 @@
         return `<span style="color:${color}">${val >= 0 ? '+' : ''}${val.toFixed(1)}</span>`;
       };
 
-      const bgStyle = isOddPair ? 'background:rgba(44,93,205,.07);' : '';
+      const bgStyle = isOddPair ? 'background:rgba(44,93,205,.15);' : '';
       const borderStyle = r.isRecent && r.window === 'Morning' ? 'border-top:2px solid rgba(122,162,255,.4);' : '';
       html += `<tr style="${bgStyle}${borderStyle}">`;
       html += `<td>${phaseCell}</td><td class="muted small">${r.dateLabel}</td><td>${r.window}</td>`;
-      html += `<td>${fmtNum(r.meanSBP)}</td><td>${fmtNum(r.meanDBP)}</td><td>${fmtDeltaBP(r.d_mean)}</td><td>${fmtDeltaBP(r.d_meanDBP)}</td>`;
+      html += `<td>${fmtNum(r.meanSBP)}</td><td>${fmtDeltaBP(r.d_mean)}</td><td>${fmtNum(r.meanDBP)}</td><td>${fmtDeltaBP(r.d_meanDBP)}</td>`;
       html += `<td>${fmtPct(r.green)}</td><td>${fmtDelta(r.d_green, false)}</td>`;
       html += `<td>${fmtPct(r.red)}</td><td>${fmtDelta(r.d_red, true)}</td>`;
       html += `<td>${fmtPct(r.severe)}</td><td>${fmtDelta(r.d_sev, true)}</td>`;
       html += `<td>${r.n}</td>`;
+      // Show hold count — use rowspan on the Morning row to span both AM/PM
+      const isMorningRow = r.window === 'Morning';
+      if (isMorningRow) {
+        const holdStyle = r.holdCount > 0 ? 'color:#c62828; font-weight:700;' : '';
+        html += `<td rowspan="2" style="vertical-align:middle; text-align:center; ${holdStyle}">${r.holdCount}</td>`;
+      }
       html += `</tr>`;
     }
     html += '</tbody></table>';
@@ -1494,12 +1505,17 @@
     const validPhases = phaseData.filter(p => p.all.n >= 3);
 
     // Circadian variables — computed from recent window only
+    const g = getGoal();
+    const isNearGoal = r => !r.green && !r.severe && !r.hypo && r.sys < g.sys + 2 && r.dia < g.dia + 2;
     const mornSevPct = morning.length >= 5 ? 100 * morning.filter(x => x.severe).length / morning.length : null;
     const aeSevPct = ae.length >= 5 ? 100 * ae.filter(x => x.severe).length / ae.length : null;
     const mornGreenPct = morning.length >= 5 ? 100 * morning.filter(x => x.green).length / morning.length : null;
     const aeGreenPct = ae.length >= 5 ? 100 * ae.filter(x => x.green).length / ae.length : null;
-    const mornRedPct = morning.length >= 5 ? 100 * morning.filter(x => x.red).length / morning.length : null;
-    const aeRedPct = ae.length >= 5 ? 100 * ae.filter(x => x.red).length / ae.length : null;
+    const mornNearPct = morning.length >= 5 ? 100 * morning.filter(isNearGoal).length / morning.length : null;
+    const aeNearPct = ae.length >= 5 ? 100 * ae.filter(isNearGoal).length / ae.length : null;
+    // Red = above goal excluding near-goal readings
+    const mornRedPct = morning.length >= 5 ? 100 * morning.filter(x => x.red && !isNearGoal(x)).length / morning.length : null;
+    const aeRedPct = ae.length >= 5 ? 100 * ae.filter(x => x.red && !isNearGoal(x)).length / ae.length : null;
     const circDiff = (mornMean != null && aeMean != null) ? aeMean - mornMean : null;
     const circDiffDBP = (mornMeanDBP != null && aeMeanDBP != null) ? aeMeanDBP - mornMeanDBP : null;
     const higherWindow = circDiff != null && circDiff > 0 ? 'afternoon/evening' : 'morning';
@@ -1551,8 +1567,8 @@
 
     // ── Card 2: Circadian Pattern (full width — merges BP split, HR, and time hotspots) ──
     if (mornMean != null && aeMean != null && morning.length >= 5 && ae.length >= 5) {
-      const mGreen = mornGreenPct || 0, mRed = mornRedPct || 0, mSev = mornSevPct || 0;
-      const aGreen = aeGreenPct || 0, aRed = aeRedPct || 0, aSev = aeSevPct || 0;
+      const mGreen = mornGreenPct || 0, mNear = mornNearPct || 0, mRed = mornRedPct || 0, mSev = mornSevPct || 0;
+      const aGreen = aeGreenPct || 0, aNear = aeNearPct || 0, aRed = aeRedPct || 0, aSev = aeSevPct || 0;
 
       // AM/PM Heart Rate
       const amHR = hrReadings.filter(r => r.window === 'Morning');
@@ -1571,6 +1587,7 @@
       // Mini legend for bar colors
       html += `<div style="display:flex; gap:14px; margin-bottom:8px; font-size:11px; color:var(--muted);">`;
       html += `<span><span style="display:inline-block;width:10px;height:10px;background:#00C853;border-radius:2px;vertical-align:middle;margin-right:3px;"></span>At goal</span>`;
+      html += `<span><span style="display:inline-block;width:10px;height:10px;background:#F9A825;border-radius:2px;vertical-align:middle;margin-right:3px;"></span>Near goal</span>`;
       html += `<span><span style="display:inline-block;width:10px;height:10px;background:#FF4444;border-radius:2px;vertical-align:middle;margin-right:3px;"></span>Above goal</span>`;
       html += `<span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;vertical-align:middle;margin-right:3px;"><svg width="10" height="10" xmlns="http://www.w3.org/2000/svg"><rect width="10" height="10" rx="2" fill="#FF0000"/><line x1="0" y1="10" x2="10" y2="0" stroke="rgba(255,255,255,.7)" stroke-width="1.5"/><line x1="3" y1="10" x2="13" y2="0" stroke="rgba(255,255,255,.7)" stroke-width="1.5"/><line x1="-3" y1="10" x2="7" y2="0" stroke="rgba(255,255,255,.7)" stroke-width="1.5"/></svg></span>Severe</span>`;
       html += `</div>`;
@@ -1587,6 +1604,7 @@
       html += `<span style="font-weight:600; font-size:13px;">Morning</span>`;
       html += `<div class="kci-bar-track">`;
       html += `<div class="kci-bar-seg" style="width:${mGreen}%;background:#00C853;"></div>`;
+      if (mNear > 0.5) html += `<div class="kci-bar-seg" style="width:${mNear}%;background:#F9A825;"></div>`;
       html += `<div class="kci-bar-seg" style="width:${mRed}%;background:#FF4444;"></div>`;
       html += `<div class="kci-bar-seg" style="width:${mSev}%;background:#FF0000;"></div>`;
       html += `</div>`;
@@ -1600,6 +1618,7 @@
       html += `<span style="font-weight:600; font-size:13px;">Aft/Eve</span>`;
       html += `<div class="kci-bar-track">`;
       html += `<div class="kci-bar-seg" style="width:${aGreen}%;background:#00C853;"></div>`;
+      if (aNear > 0.5) html += `<div class="kci-bar-seg" style="width:${aNear}%;background:#F9A825;"></div>`;
       html += `<div class="kci-bar-seg" style="width:${aRed}%;background:#FF4444;"></div>`;
       html += `<div class="kci-bar-seg" style="width:${aSev}%;background:#FF0000;"></div>`;
       html += `</div>`;
@@ -1965,14 +1984,39 @@
   // Use 'input' event for number fields so updates happen immediately on every keystroke/spinner click
   $('amStart').addEventListener('input',()=>{processData();renderAll();});
   $('amEnd').addEventListener('input',()=>{processData();renderAll();});
+  function updateGoalHighlight() {
+    const prof = $('profile').value;
+    const goalPill = $('goalPill');
+    const customPill = $('customGoalPill');
+    const isCustom = prof === 'custom';
+    const isNonDefault = prof !== 'us';
+
+    // Show/hide custom inputs
+    customPill.style.display = isCustom ? 'inline-flex' : 'none';
+
+    if (isCustom) {
+      // Custom: strong amber highlight on both pills
+      goalPill.style.cssText = 'display:inline-flex; gap:8px; align-items:center; padding:6px 10px; border-radius:999px; border:2px solid #E65100; background:rgba(230,81,0,.10);';
+      customPill.style.cssText = 'display:inline-flex; gap:8px; align-items:center; padding:6px 10px; border-radius:999px; border:2px solid #E65100; background:rgba(230,81,0,.10);';
+    } else if (isNonDefault) {
+      // WHO or other non-default: blue highlight
+      goalPill.style.cssText = 'display:inline-flex; gap:8px; align-items:center; padding:6px 10px; border-radius:999px; border:2px solid #1565C0; background:rgba(21,101,192,.10);';
+      customPill.style.cssText = '';
+    } else {
+      // US default: normal styling
+      goalPill.style.cssText = '';
+      customPill.style.cssText = '';
+    }
+  }
+
   $('profile').addEventListener('change',()=>{
-    $('customGoalPill').style.display=$('profile').value==='custom'?'inline-flex':'none';
     // Persist goal settings
     localStorage.setItem('hbp_goalProfile', $('profile').value);
     if ($('profile').value==='custom') {
       localStorage.setItem('hbp_goalSys', $('goalSys').value);
       localStorage.setItem('hbp_goalDia', $('goalDia').value);
     }
+    updateGoalHighlight();
     renderAll();
   });
   $('goalSys').addEventListener('input',()=>{
@@ -2049,13 +2093,13 @@
   if (savedProfile) {
     $('profile').value = savedProfile;
     if (savedProfile === 'custom') {
-      $('customGoalPill').style.display = 'inline-flex';
       const savedSys = localStorage.getItem('hbp_goalSys');
       const savedDia = localStorage.getItem('hbp_goalDia');
       if (savedSys) $('goalSys').value = savedSys;
       if (savedDia) $('goalDia').value = savedDia;
     }
   }
+  updateGoalHighlight();
 
   // Auto-restore last file from localStorage
   const saved = loadFromLocalStorage(STORAGE_PREFIX);

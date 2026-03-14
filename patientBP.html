@@ -158,7 +158,7 @@
       <div class="legend-item"><span class="legend-swatch" style="background:#7B1FA2"></span> Low: SBP &lt;100 or DBP &lt;60</div>
       <div class="legend-item"><span class="legend-swatch" style="background:#00C853"></span> At Goal: SBP &lt;130 AND DBP &lt;80</div>
       <div class="legend-item"><span class="legend-swatch" style="background:#FF4444"></span> Above Goal: SBP 130-159 or DBP &ge;80</div>
-      <div class="legend-item"><span style="display:inline-block;width:22px;height:16px;border-radius:3px;vertical-align:middle;"><svg width="22" height="16" xmlns="http://www.w3.org/2000/svg"><rect width="22" height="16" rx="2" fill="#FF0000"/><line x1="0" y1="16" x2="16" y2="0" stroke="rgba(255,255,255,.7)" stroke-width="1.5"/><line x1="6" y1="16" x2="22" y2="0" stroke="rgba(255,255,255,.7)" stroke-width="1.5"/><line x1="-6" y1="16" x2="10" y2="0" stroke="rgba(255,255,255,.7)" stroke-width="1.5"/></svg></span> High: SBP &ge;160 or DBP &ge;100</div>
+      <div class="legend-item"><span style="display:inline-block;width:22px;height:16px;border-radius:3px;vertical-align:middle;"><svg width="22" height="16" xmlns="http://www.w3.org/2000/svg"><rect width="22" height="16" rx="2" fill="#FF0000"/><line x1="0" y1="16" x2="16" y2="0" stroke="rgba(255,255,255,.7)" stroke-width="1.5"/><line x1="6" y1="16" x2="22" y2="0" stroke="rgba(255,255,255,.7)" stroke-width="1.5"/><line x1="-6" y1="16" x2="10" y2="0" stroke="rgba(255,255,255,.7)" stroke-width="1.5"/></svg></span> Very High: SBP &ge;160 or DBP &ge;100</div>
       <div class="legend-item"><span style="display:inline-block;width:22px;height:2px;background:#8a8a8a;vertical-align:middle;"></span> Heart Rate</div>
       <div class="legend-item"><span style="display:inline-block;width:22px;height:0;border-top:2px dashed #666;vertical-align:middle;"></span> Targets (SBP &lt;130, DBP &lt;80)</div>
       <div class="legend-item"><span style="font-size:20px;">&#9733;</span> Held BP meds</div>
@@ -676,7 +676,7 @@
       if(!best){tip.style.display='none';return;}
       let cls;
       if (best.hypo) cls = '<span style="color:#7B1FA2"><b>LOW</b></span>';
-      else if (best.severe) cls = '<span style="color:#c62828"><b>HIGH</b></span>';
+      else if (best.severe) cls = '<span style="color:#c62828"><b>VERY HIGH</b></span>';
       else if (classifyPatient(best.sys,best.dia).green) cls = '<span style="color:#1b7a3d">At Goal</span>';
       else cls = '<span style="color:#b87800">Above Goal</span>';
       const notesClean = (best.notes||'').replace(/[;\-\u2014\u2013\s]+/g,' ').trim();
@@ -754,7 +754,7 @@
 
     $('avgAllLabel').textContent = `Recent ${RECENT_WEEKS}-week average${labelSuffix}`;
     $('avgAll').textContent = fmtBP(rm.avgSys, rm.avgDia);
-    $('avgAllDetail').innerHTML = `n=${rm.count} &bull; <span class="ok"><b>At Goal (&lt;${PATIENT_GOAL.sys}/${PATIENT_GOAL.dia})</b> ${fmtPct(rm.pctGreen)}</span> &bull; <span style="color:#d32f2f"><b>Above Goal</b> ${fmtPct(rm.pctRed)}</span> &bull; <span style="color:#c62828"><b>High ${fmtPct(rm.pctSevere)}</b></span>${rm.pctHypo > 0 ? ' &bull; <span style="color:#7B1FA2"><b>Low</b> ' + fmtPct(rm.pctHypo) + '</span>' : ''}`;
+    $('avgAllDetail').innerHTML = `n=${rm.count} &bull; <span class="ok"><b>At Goal (&lt;${PATIENT_GOAL.sys}/${PATIENT_GOAL.dia})</b> ${fmtPct(rm.pctGreen)}</span> &bull; <span style="color:#d32f2f"><b>Above Goal</b> ${fmtPct(rm.pctRed)}</span> &bull; <span style="color:#c62828"><b>Very High ${fmtPct(rm.pctSevere)}</b></span>${rm.pctHypo > 0 ? ' &bull; <span style="color:#7B1FA2"><b>Low</b> ' + fmtPct(rm.pctHypo) + '</span>' : ''}`;
 
     // Split-status bar: AM | PM
     const amReadings = rec.filter(x => x.window === 'Morning');

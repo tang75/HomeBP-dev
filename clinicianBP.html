@@ -1707,7 +1707,6 @@
     'CIBIS2':        { short: 'CIBIS-II 1999', pmid: '10023943', title: 'CIBIS-II Investigators. Lancet 1999' },
     'COPERNICUS':    { short: 'COPERNICUS 2001', pmid: '11386263', title: 'Packer et al. N Engl J Med 2001' },
     'MERITHF':       { short: 'MERIT-HF 1999', pmid: '10376614', title: 'MERIT-HF Study Group. Lancet 1999' },
-    'NonDipping':    { short: 'Ohkubo 2002', pmid: '12409956', title: 'Ohkubo et al. J Hypertens 2002' },
     'ISH':           { short: 'SHEP 1991', pmid: '2046107', title: 'SHEP Cooperative Research Group. JAMA 1991' },
     'JCurve':        { short: 'Cruickshank 1988', pmid: '3145062', title: 'Cruickshank et al. BMJ 1988 (J-curve)' },
     'AHA2017':       { short: 'AHA/ACC 2017', pmid: '29133356', title: 'Whelton et al. Hypertension 2018 (AHA/ACC Guideline)' },
@@ -1840,13 +1839,9 @@
       }
     }
 
-    // 1d. Non-dipping inference
-    if (d.ae.length >= 5 && d.morning.length >= 5 && d.aeMean != null && d.mornMean != null) {
-      if (d.aeMean >= d.mornMean - 2) {
-        insights.push({ category: 'BP Patterns', priority: 3, icon: '🌙',
-          text: `<b>Possible non-dipping pattern:</b> Afternoon/evening BP (${Math.round(d.aeMean)}/${Math.round(d.aeMeanDBP)}) is not lower than morning (${Math.round(d.mornMean)}/${Math.round(d.mornMeanDBP)}). Non-dipping is associated with increased target-organ damage and CV events.${cite('NonDipping')} Consider ambulatory BP monitoring (ABPM) for confirmation.` });
-      }
-    }
+    // 1d. (Removed: non-dipping inference was misleading — home BP monitors capture
+    //  AM vs PM waking readings, NOT nocturnal sleep-time BP. True non-dipping
+    //  requires ABPM sleep data and cannot be inferred from waking readings.)
 
     // 1e. Morning-specific severity
     if (d.mornSevPct != null && d.mornSevPct >= 15 && (d.aeSevPct == null || d.mornSevPct > d.aeSevPct + 10)) {

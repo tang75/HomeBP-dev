@@ -1578,12 +1578,13 @@
       for (const seg of segments) {
         if (seg.pct < 0.5) continue; // skip negligible segments
         const rounded = Math.round(seg.pct);
-        // Show label inside if segment wide enough (>=12%), otherwise just show the segment
-        const showLabel = seg.pct >= 12;
+        // Show label inside if segment wide enough; use smaller font for narrow segments
+        const showLabel = seg.pct >= 6;
+        const fontSize = seg.pct >= 12 ? '10px' : '8px';
         const textColor = seg.color === '#00C853' ? 'rgba(0,0,0,.7)' : '#fff';
         const hatchClass = seg.hatched ? ' hatched-severe' : '';
         const bgStyle = seg.hatched ? '' : `background:${seg.color};`;
-        barHtml += `<div class="kci-bar-seg${hatchClass}" style="width:${seg.pct}%; ${bgStyle} display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:700; color:${textColor}; overflow:hidden; white-space:nowrap;">`;
+        barHtml += `<div class="kci-bar-seg${hatchClass}" style="width:${seg.pct}%; ${bgStyle} display:flex; align-items:center; justify-content:center; font-size:${fontSize}; font-weight:700; color:${textColor}; overflow:hidden; white-space:nowrap;">`;
         if (showLabel) barHtml += `${rounded}%`;
         barHtml += `</div>`;
       }

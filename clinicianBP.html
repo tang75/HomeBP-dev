@@ -248,6 +248,7 @@
       </div>
       <button id="printBtn">Print / PDF</button>
       <button id="clearBtn" style="display:none;">Clear Data</button>
+      <button id="editProfileBtn2" style="display:none; font-size:12px; font-weight:600; color:#1a73e8; background:rgba(26,115,232,.08); border:1px solid rgba(26,115,232,.25); padding:5px 14px; border-radius:8px; cursor:pointer; white-space:nowrap;">Edit Profile</button>
       <button id="clearProfileBtn" style="display:none; color:#c62828;">Clear Patient Profile</button>
     </div>
     <div class="row" style="margin-top:6px; gap:6px; flex-wrap:wrap; align-items:center;">
@@ -667,6 +668,7 @@
   function updateProfileBadge(p) {
     const badge = $('profileBadge');
     const clearBtn = $('clearProfileBtn');
+    const editBtn2 = $('editProfileBtn2');
     const panel = $('profilePanel');
     const cta = $('profileCTA');
     const savedBar = $('profileSavedBar');
@@ -677,6 +679,7 @@
       badge.textContent = 'Profile loaded';
       badge.className = 'profile-badge loaded';
       if (clearBtn) clearBtn.style.display = 'inline-block';
+      if (editBtn2) editBtn2.style.display = 'inline-block';
       if (panel) panel.classList.remove('needs-profile');
       if (cta) { cta.textContent = 'Edit Profile →'; cta.style.color = '#1a73e8'; }
       if (summary) summary.textContent = buildProfileSummary(p);
@@ -686,6 +689,7 @@
       badge.textContent = 'Not set';
       badge.className = 'profile-badge empty';
       if (clearBtn) clearBtn.style.display = 'none';
+      if (editBtn2) editBtn2.style.display = 'none';
       if (panel) panel.classList.add('needs-profile');
       if (cta) { cta.textContent = 'Set Patient Profile →'; cta.style.color = '#E65100'; }
       if (savedBar) savedBar.style.display = 'none';
@@ -2993,6 +2997,7 @@
   }
   $('profileCTA').addEventListener('click', (e) => { e.preventDefault(); openProfilePanel(); });
   $('profileEditBtn').addEventListener('click', (e) => { e.stopPropagation(); openProfilePanel(); });
+  $('editProfileBtn2').addEventListener('click', (e) => { e.stopPropagation(); openProfilePanel(); });
   $('ppCKD').addEventListener('change', () => { $('ppCKDSub').style.display = $('ppCKD').checked ? 'block' : 'none'; });
   $('ppHF').addEventListener('change', () => { $('ppHFSub').style.display = $('ppHF').checked ? 'block' : 'none'; });
   $('profileSaveBtn').addEventListener('click', saveProfile);

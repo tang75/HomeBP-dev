@@ -381,9 +381,12 @@
             👤 Patient Profile
             <span id="profileBadge" class="profile-badge empty">Not set</span>
           </span>
-          <span id="profileSummary" style="display:none; font-size:11px; color:var(--text); margin-left:8px; flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;"></span>
-          <button id="profileEditBtn" style="display:none; font-size:11px; font-weight:600; color:#1a73e8; background:rgba(26,115,232,.08); border:1px solid rgba(26,115,232,.25); padding:3px 10px; border-radius:6px; cursor:pointer; margin-right:6px; white-space:nowrap;">Edit Profile</button>
           <span class="profile-chevron">&#x25BC;</span>
+        </div>
+        <!-- Saved profile summary bar (visible when profile saved & panel collapsed) -->
+        <div id="profileSavedBar" style="display:none; padding:8px 14px; border-top:1px solid rgba(0,0,0,.06); background:rgba(27,122,61,.04); align-items:center; gap:10px; flex-wrap:wrap;">
+          <span id="profileSummary" style="font-size:12px; color:var(--text); flex:1;"></span>
+          <button id="profileEditBtn" style="font-size:12px; font-weight:600; color:#1a73e8; background:rgba(26,115,232,.08); border:1px solid rgba(26,115,232,.25); padding:5px 14px; border-radius:8px; cursor:pointer; white-space:nowrap;">Edit Profile</button>
         </div>
         <div class="profile-body">
           <div class="profile-grid">
@@ -663,25 +666,26 @@
     const clearBtn = $('clearProfileBtn');
     const panel = $('profilePanel');
     const cta = $('profileCTA');
-    const editBtn = $('profileEditBtn');
+    const savedBar = $('profileSavedBar');
     const summary = $('profileSummary');
     const set = isProfileSet(p);
+    const panelOpen = panel && panel.classList.contains('open');
     if (set) {
       badge.textContent = 'Profile loaded';
       badge.className = 'profile-badge loaded';
       if (clearBtn) clearBtn.style.display = 'inline-block';
       if (panel) panel.classList.remove('needs-profile');
       if (cta) { cta.textContent = 'Edit Profile →'; cta.style.color = '#1a73e8'; }
-      if (editBtn) editBtn.style.display = 'inline-block';
-      if (summary) { summary.textContent = buildProfileSummary(p); summary.style.display = 'inline'; }
+      if (summary) summary.textContent = buildProfileSummary(p);
+      // Show saved bar only when panel is collapsed
+      if (savedBar) savedBar.style.display = panelOpen ? 'none' : 'flex';
     } else {
       badge.textContent = 'Not set';
       badge.className = 'profile-badge empty';
       if (clearBtn) clearBtn.style.display = 'none';
       if (panel) panel.classList.add('needs-profile');
       if (cta) { cta.textContent = 'Set Patient Profile →'; cta.style.color = '#E65100'; }
-      if (editBtn) editBtn.style.display = 'none';
-      if (summary) { summary.textContent = ''; summary.style.display = 'none'; }
+      if (savedBar) savedBar.style.display = 'none';
     }
   }
 
@@ -2969,10 +2973,19 @@
   $('changeFileBtn').addEventListener('click',(e)=>{ e.preventDefault(); $('file').click(); });
 
   // Patient Profile event wiring
-  $('profileToggle').addEventListener('click', () => { $('profilePanel').classList.toggle('open'); });
+  function updateSavedBarVisibility() {
+    const savedBar = $('profileSavedBar');
+    const panel = $('profilePanel');
+    const p = getPatientProfile();
+    if (savedBar) {
+      savedBar.style.display = (isProfileSet(p) && !panel.classList.contains('open')) ? 'flex' : 'none';
+    }
+  }
+  $('profileToggle').addEventListener('click', () => { $('profilePanel').classList.toggle('open'); updateSavedBarVisibility(); });
   function openProfilePanel() {
     const panel = $('profilePanel');
     if (!panel.classList.contains('open')) panel.classList.add('open');
+    updateSavedBarVisibility();
     panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
   $('profileCTA').addEventListener('click', (e) => { e.preventDefault(); openProfilePanel(); });

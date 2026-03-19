@@ -417,7 +417,6 @@
       <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:4px;">
         <span style="font-weight:650; font-size:15px;">Clinical Insights Dashboard</span>
         <span id="insightsRange" style="display:inline-block; font-size:12px; font-weight:600; background:#e8f0fe; color:#1a73e8; padding:3px 10px; border-radius:12px;">&mdash;</span>
-        <a id="profileCTA" href="#" style="font-size:12px; font-weight:600; color:#1a73e8; text-decoration:none; margin-left:auto;">Set Patient Profile &rarr;</a>
       </div>
       <div class="hr"></div>
       <!-- Patient Profile Panel -->
@@ -432,7 +431,6 @@
         <!-- Saved profile summary bar (visible when profile saved & panel collapsed) -->
         <div id="profileSavedBar" style="display:none; padding:8px 14px; border-top:1px solid rgba(0,0,0,.06); background:rgba(27,122,61,.04); align-items:center; gap:10px; flex-wrap:wrap;">
           <span id="profileSummary" style="font-size:12px; color:var(--text); flex:1;"></span>
-          <button id="profileEditBtn" style="font-size:12px; font-weight:600; color:#1a73e8; background:rgba(26,115,232,.08); border:1px solid rgba(26,115,232,.25); padding:5px 14px; border-radius:8px; cursor:pointer; white-space:nowrap;">Edit Profile</button>
         </div>
         <div class="profile-body">
           <div class="profile-grid">
@@ -712,7 +710,6 @@
     const clearBtn = $('clearProfileBtn');
     const editBtn2 = $('editProfileBtn2');
     const panel = $('profilePanel');
-    const cta = $('profileCTA');
     const savedBar = $('profileSavedBar');
     const summary = $('profileSummary');
     const set = isProfileSet(p);
@@ -723,7 +720,6 @@
       if (clearBtn) clearBtn.style.display = 'inline-block';
       if (editBtn2) editBtn2.style.display = 'inline-block';
       if (panel) panel.classList.remove('needs-profile');
-      if (cta) { cta.textContent = 'Edit Profile →'; cta.style.color = '#1a73e8'; }
       if (summary) summary.textContent = buildProfileSummary(p);
       // Show saved bar only when panel is collapsed
       if (savedBar) savedBar.style.display = panelOpen ? 'none' : 'flex';
@@ -733,7 +729,6 @@
       if (clearBtn) clearBtn.style.display = 'none';
       if (editBtn2) editBtn2.style.display = 'none';
       if (panel) panel.classList.add('needs-profile');
-      if (cta) { cta.textContent = 'Set Patient Profile →'; cta.style.color = '#E65100'; }
       if (savedBar) savedBar.style.display = 'none';
     }
   }
@@ -2361,7 +2356,6 @@
 
       out += `<div style="padding:6px 10px; border-radius:8px; background:rgba(44,93,205,.06); border:1px solid rgba(44,93,205,.15); font-size:11px; color:var(--accent); margin-bottom:10px; display:flex; align-items:center; flex-wrap:wrap; gap:4px;">
         <span><b>Personalized for:</b> ${parts.join(' · ')}</span>
-        <a href="#" class="profile-edit-link" onclick="event.preventDefault(); var p=document.getElementById('profilePanel'); if(!p.classList.contains('open')) p.classList.add('open'); p.scrollIntoView({behavior:'smooth',block:'start'});" style="margin-left:auto; font-size:10px; font-weight:600; color:#1a73e8; text-decoration:none; white-space:nowrap;">Edit Profile ✏️</a>
       </div>`;
     }
 
@@ -3080,8 +3074,6 @@
   $('ippCKD').addEventListener('change', () => { $('ippCKDSub').style.display = $('ippCKD').checked ? 'block' : 'none'; });
   $('ippHF').addEventListener('change', () => { $('ippHFSub').style.display = $('ippHF').checked ? 'block' : 'none'; });
 
-  $('profileCTA').addEventListener('click', (e) => { e.preventDefault(); openProfilePanel(); });
-  $('profileEditBtn').addEventListener('click', (e) => { e.stopPropagation(); openProfilePanel(); });
   $('ppCKD').addEventListener('change', () => { $('ppCKDSub').style.display = $('ppCKD').checked ? 'block' : 'none'; });
   $('ppHF').addEventListener('change', () => { $('ppHFSub').style.display = $('ppHF').checked ? 'block' : 'none'; });
   $('profileSaveBtn').addEventListener('click', saveProfile);

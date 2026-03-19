@@ -301,6 +301,48 @@
     </div>
   </div>
 
+  <!-- Inline Profile Editor (shown from toolbar Edit Profile button) -->
+  <div id="inlineProfilePanel" class="no-print" style="display:none; border:1px solid rgba(26,115,232,.3); border-radius:12px; background:#f8faff; padding:14px 16px; margin-bottom:10px; position:relative;">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;">
+      <span style="font-weight:650; font-size:14px;">👤 Edit Patient Profile</span>
+      <button id="inlineProfileClose" style="background:none; border:none; font-size:18px; cursor:pointer; color:var(--muted); padding:0 4px;">&times;</button>
+    </div>
+    <div class="profile-grid" id="inlineProfileGrid">
+      <div class="profile-section-title">Demographics</div>
+      <div class="profile-field"><label>Age</label><input type="number" id="ippAge" min="18" max="120" placeholder="—" /></div>
+      <div class="profile-field"><label>Sex</label><select id="ippSex"><option value="">— select —</option><option value="male">Male</option><option value="female">Female</option></select></div>
+      <div class="profile-field"><label>Race / Ethnicity</label><select id="ippRace"><option value="">— select —</option><option value="black">Black / African American</option><option value="white">White</option><option value="hispanic">Hispanic / Latino</option><option value="asian">Asian</option><option value="other">Other</option></select></div>
+
+      <div class="profile-section-title">Comorbidities</div>
+      <div class="profile-check"><input type="checkbox" id="ippDiabetes" /><label for="ippDiabetes">Diabetes mellitus</label></div>
+      <div><div class="profile-check"><input type="checkbox" id="ippCKD" /><label for="ippCKD">Chronic kidney disease</label></div>
+        <div class="profile-sub-field" id="ippCKDSub"><label style="font-size:11px; color:var(--muted);">eGFR (mL/min)</label><input type="number" id="ippEgfr" min="5" max="120" placeholder="—" style="width:80px; font-size:12px; padding:3px 6px; border:1px solid #ccc; border-radius:6px;" /></div>
+      </div>
+      <div><div class="profile-check"><input type="checkbox" id="ippHF" /><label for="ippHF">Heart failure</label></div>
+        <div class="profile-sub-field" id="ippHFSub"><select id="ippHFType" style="width:120px; font-size:12px; padding:3px 6px; border:1px solid #ccc; border-radius:6px;"><option value="">— type —</option><option value="hfref">HFrEF</option><option value="hfpef">HFpEF</option></select></div>
+      </div>
+      <div class="profile-check"><input type="checkbox" id="ippCAD" /><label for="ippCAD">CAD / Prior MI</label></div>
+      <div class="profile-check"><input type="checkbox" id="ippStroke" /><label for="ippStroke">Prior Stroke / TIA</label></div>
+      <div class="profile-check"><input type="checkbox" id="ippAfib" /><label for="ippAfib">Atrial fibrillation</label></div>
+
+      <div class="profile-section-title">Relevant Conditions</div>
+      <div class="profile-check"><input type="checkbox" id="ippAsthma" /><label for="ippAsthma">Asthma / COPD</label></div>
+      <div class="profile-check"><input type="checkbox" id="ippGout" /><label for="ippGout">Gout</label></div>
+      <div class="profile-check"><input type="checkbox" id="ippPregnancy" /><label for="ippPregnancy">Pregnancy / planning</label></div>
+      <div class="profile-check"><input type="checkbox" id="ippAngioedema" /><label for="ippAngioedema">History of angioedema</label></div>
+
+      <div class="profile-section-title">Drug Intolerances</div>
+      <div class="profile-check"><input type="checkbox" id="ippAceiCough" /><label for="ippAceiCough">ACEi cough</label></div>
+      <div class="profile-check"><input type="checkbox" id="ippCcbEdema" /><label for="ippCcbEdema">CCB edema</label></div>
+      <div class="profile-field" style="grid-column:span 2;"><label>Other intolerances</label><input type="text" id="ippOther" placeholder="e.g., rash with HCTZ" /></div>
+
+      <div class="profile-actions">
+        <button id="inlineProfileSaveBtn" class="primary">Save Profile</button>
+        <button id="inlineProfileCancelBtn">Cancel</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Tabs -->
   <div class="tabs no-print">
     <button class="tab-btn active" data-tab="timeline">TimeLine</button>
@@ -2990,22 +3032,56 @@
   }
   $('profileToggle').addEventListener('click', () => { $('profilePanel').classList.toggle('open'); updateSavedBarVisibility(); });
   function openProfilePanel() {
-    // Switch to Clinical Insights tab if not already active
-    const insightsTab = document.querySelector('.tab-btn[data-tab="insights"]');
-    if (insightsTab && !insightsTab.classList.contains('active')) {
-      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-      insightsTab.classList.add('active');
-      $('tab-insights').classList.add('active');
-    }
     const panel = $('profilePanel');
     if (!panel.classList.contains('open')) panel.classList.add('open');
     updateSavedBarVisibility();
     panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
+
+  // --- Inline profile editor (toolbar button) ---
+  // Field mapping: inline id prefix "ipp" <-> main form "pp"
+  const inlineFieldMap = [
+    ['ippAge','ppAge','value'], ['ippSex','ppSex','value'], ['ippRace','ppRace','value'],
+    ['ippDiabetes','ppDiabetes','checked'], ['ippCKD','ppCKD','checked'], ['ippEgfr','ppEgfr','value'],
+    ['ippHF','ppHF','checked'], ['ippHFType','ppHFType','value'],
+    ['ippCAD','ppCAD','checked'], ['ippStroke','ppStroke','checked'], ['ippAfib','ppAfib','checked'],
+    ['ippAsthma','ppAsthma','checked'], ['ippGout','ppGout','checked'],
+    ['ippPregnancy','ppPregnancy','checked'], ['ippAngioedema','ppAngioedema','checked'],
+    ['ippAceiCough','ppAceiCough','checked'], ['ippCcbEdema','ppCcbEdema','checked'],
+    ['ippOther','ppOther','value']
+  ];
+  function syncInlineFromMain() {
+    inlineFieldMap.forEach(([inl, main, prop]) => { $(inl)[prop] = $(main)[prop]; });
+    $('ippCKDSub').style.display = $('ippCKD').checked ? 'block' : 'none';
+    $('ippHFSub').style.display = $('ippHF').checked ? 'block' : 'none';
+  }
+  function syncMainFromInline() {
+    inlineFieldMap.forEach(([inl, main, prop]) => { $(main)[prop] = $(inl)[prop]; });
+    $('ppCKDSub').style.display = $('ppCKD').checked ? 'block' : 'none';
+    $('ppHFSub').style.display = $('ppHF').checked ? 'block' : 'none';
+  }
+  function openInlineProfile() {
+    syncInlineFromMain();
+    $('inlineProfilePanel').style.display = 'block';
+    $('inlineProfilePanel').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+  function closeInlineProfile() {
+    $('inlineProfilePanel').style.display = 'none';
+  }
+
+  $('editProfileBtn2').addEventListener('click', (e) => { e.stopPropagation(); openInlineProfile(); });
+  $('inlineProfileClose').addEventListener('click', closeInlineProfile);
+  $('inlineProfileCancelBtn').addEventListener('click', closeInlineProfile);
+  $('inlineProfileSaveBtn').addEventListener('click', () => {
+    syncMainFromInline();
+    saveProfile();
+    closeInlineProfile();
+  });
+  $('ippCKD').addEventListener('change', () => { $('ippCKDSub').style.display = $('ippCKD').checked ? 'block' : 'none'; });
+  $('ippHF').addEventListener('change', () => { $('ippHFSub').style.display = $('ippHF').checked ? 'block' : 'none'; });
+
   $('profileCTA').addEventListener('click', (e) => { e.preventDefault(); openProfilePanel(); });
   $('profileEditBtn').addEventListener('click', (e) => { e.stopPropagation(); openProfilePanel(); });
-  $('editProfileBtn2').addEventListener('click', (e) => { e.stopPropagation(); openProfilePanel(); });
   $('ppCKD').addEventListener('change', () => { $('ppCKDSub').style.display = $('ppCKD').checked ? 'block' : 'none'; });
   $('ppHF').addEventListener('change', () => { $('ppHFSub').style.display = $('ppHF').checked ? 'block' : 'none'; });
   $('profileSaveBtn').addEventListener('click', saveProfile);

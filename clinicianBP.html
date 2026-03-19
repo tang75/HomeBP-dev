@@ -2990,6 +2990,14 @@
   }
   $('profileToggle').addEventListener('click', () => { $('profilePanel').classList.toggle('open'); updateSavedBarVisibility(); });
   function openProfilePanel() {
+    // Switch to Clinical Insights tab if not already active
+    const insightsTab = document.querySelector('.tab-btn[data-tab="insights"]');
+    if (insightsTab && !insightsTab.classList.contains('active')) {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      insightsTab.classList.add('active');
+      $('tab-insights').classList.add('active');
+    }
     const panel = $('profilePanel');
     if (!panel.classList.contains('open')) panel.classList.add('open');
     updateSavedBarVisibility();

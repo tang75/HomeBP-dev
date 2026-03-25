@@ -1609,11 +1609,10 @@
     }
     if (phaseGroups.length < 2) { compContainer.innerHTML = ''; return; }
 
-    // New ranking: score = (%at goal) - (%severe) - 5×(holds/mo). Higher = better.
+    // New ranking: score = (%at goal) - (%severe) - 5×(hold count). Higher = better.
     const scored = phaseGroups.map(p => {
-      const holdRate = p.holdCount / p.days * 30;
-      const score = p.green - p.severe - 5 * holdRate;
-      return { ...p, holdRate, score };
+      const score = p.green - p.severe - 5 * p.holdCount;
+      return { ...p, score };
     });
     scored.sort((a, b) => b.score - a.score); // descending: highest score = best
     const best = scored[0], worst = scored[scored.length - 1];
@@ -1703,7 +1702,7 @@
 
     // Methodology
     compHtml += '<div class="muted" style="font-size:10px; margin-top:6px; line-height:1.4;">';
-    compHtml += 'Score = <span style="color:#1b7a3d;">(%at goal)</span> &minus; <span style="color:#c62828;">(%severe)</span> &minus; <span style="color:#c62828;">5&times;(holds/mo)</span>. Higher = better.';
+    compHtml += 'Score = <span style="color:#1b7a3d;">(%at goal)</span> &minus; <span style="color:#c62828;">(%severe)</span> &minus; <span style="color:#c62828;">5&times;(holds)</span>. Higher = better.';
     compHtml += '</div>';
 
     // Best-is-not-current warning
@@ -2756,7 +2755,7 @@
           `<b>At goal:</b> Mean SBP < ${goal.sys} AND mean DBP < ${goal.dia}`,
           `<b>Near goal:</b> Mean SBP < ${goal.sys+5} AND mean DBP < ${goal.dia+5}`,
           `<b>Low severe burden:</b> < 5% severe readings in most recent phase`,
-          `<b>Treatment plan comparison:</b> On the Medication Response tab. Each regimen row shows a stacked distribution bar (Low/At Goal/Above Goal/Severe) using the same color coding as the Timeline legend, making tier-shifting between adjacent categories immediately visible. Holds column, Score = (%at goal) − (%severe) − 5 × (holds/month). Higher = better. If best regimen ≠ current, warns for re-evaluation`,
+          `<b>Treatment plan comparison:</b> On the Medication Response tab. Each regimen row shows a stacked distribution bar (Low/At Goal/Above Goal/Severe) using the same color coding as the Timeline legend, making tier-shifting between adjacent categories immediately visible. Holds column, Score = (%at goal) − (%severe) − 5 × (hold count). Higher = better. If best regimen ≠ current, warns for re-evaluation`,
           `<b>Treatment plan comparison — data windows:</b> All phases use the same window: the most recent ${recentWeeks} week(s) of readings before the phase ended (or before today for the current phase). This ensures an apples-to-apples comparison across regimens. Configurable via "Recent window (wks)" in the settings bar`,
         ]
       },

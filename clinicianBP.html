@@ -1125,22 +1125,10 @@
         ctx.font='bold 9px system-ui';
         const labelW = ctx.measureText(label).width;
         if(visibleDays>=SHORT_BAR_DAYS && clampedWidth >= labelW + 6){
-          // Label fits inside the bar
+          // Label fits inside the bar — show it; otherwise rely on hover
           const tc=chooseSigTextColor(baseColor,alpha);
           ctx.fillStyle=tc;ctx.textAlign='center';
           ctx.fillText(label, midX, yCenter+3);
-        } else if (clampX1 + labelW + 6 < W - PAD.r) {
-          // Callout to the right of the bar
-          ctx.fillStyle='rgba(0,0,0,.85)';ctx.textAlign='left';
-          ctx.fillText(label, clampX1+4, yCenter+3);
-          ctx.strokeStyle='rgba(0,0,0,.25)';ctx.lineWidth=0.5;
-          ctx.beginPath();ctx.moveTo(clampX1,yCenter);ctx.lineTo(clampX1+3,yCenter);ctx.stroke();
-        } else if (clampX0 - labelW - 6 > PAD.l) {
-          // Callout to the left of the bar
-          ctx.fillStyle='rgba(0,0,0,.85)';ctx.textAlign='right';
-          ctx.fillText(label, clampX0-4, yCenter+3);
-          ctx.strokeStyle='rgba(0,0,0,.25)';ctx.lineWidth=0.5;
-          ctx.beginPath();ctx.moveTo(clampX0,yCenter);ctx.lineTo(clampX0-3,yCenter);ctx.stroke();
         }
       }
     }

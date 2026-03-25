@@ -2755,8 +2755,25 @@
           `<b>At goal:</b> Mean SBP < ${goal.sys} AND mean DBP < ${goal.dia}`,
           `<b>Near goal:</b> Mean SBP < ${goal.sys+5} AND mean DBP < ${goal.dia+5}`,
           `<b>Low severe burden:</b> < 5% severe readings in most recent phase`,
-          `<b>Treatment plan comparison:</b> On the Medication Response tab. Each regimen row shows a stacked distribution bar (Low/At Goal/Above Goal/Severe) using the same color coding as the Timeline legend, making tier-shifting between adjacent categories immediately visible. Holds column, Score = (%at goal) − (%severe) − 5 × (hold count). Higher = better. If best regimen ≠ current, warns for re-evaluation`,
-          `<b>Treatment plan comparison — data windows:</b> All phases use the same window: the most recent ${recentWeeks} week(s) of readings before the phase ended (or before today for the current phase). This ensures an apples-to-apples comparison across regimens. Configurable via "Recent window (wks)" in the settings bar`,
+          `<b>Treatment plan comparison:</b> See dedicated "Treatment Plan Comparison" section below`,
+        ]
+      },
+      {
+        title: 'Treatment Plan Comparison',
+        rules: [
+          `<b>Location:</b> Medication Response tab — requires ≥ 2 regimen phases with ≥ 3 readings each`,
+          `<b>Phase detection:</b> A new phase begins when the active medication regimen changes (drug added, removed, or dose changed). Boundaries within 2 days are merged`,
+          `<b>Data window:</b> Each phase uses the most recent ${recentWeeks} week(s) of readings before the phase ended (or before today for the current phase). All phases use the same window size for apples-to-apples comparison. Configurable via "Recent window (wks)" in the settings bar`,
+          `<b>Stacked distribution bar:</b> Each row shows a stacked bar with 5 categories: Low (purple, SBP ≤ ${BPCore.HYPO_SBP_MAX}), At Goal (green, SBP < ${goal.sys} and DBP < ${goal.dia}), Near Goal (amber, within 2 mmHg of goal but not at goal), Above Goal (red, above near-goal threshold), Severe (hatched red, SBP ≥ ${BPCore.SEVERE_SBP_MIN} or DBP ≥ ${BPCore.SEVERE_DBP_MIN})`,
+          `<b>Percentage labels:</b> Shown inside segments ≥ 6%. Segments 1–5% show labels below the bar in the segment's color. Segments < 1% are hidden`,
+          `<b>Scoring formula:</b> Score = (%at goal) − (%severe) − 5 × (hold count). Higher = better. Uses raw hold count, not extrapolated monthly rate, to avoid disproportionate penalties for short phases`,
+          `<b>Ranking:</b> Phases sorted by score descending. #1 = best. Row highlighting: best row has green tint, worst row (if > 2 phases) has red tint`,
+          `<b>Trophy icon:</b> Shown only for a dominant winner: ≥ 50% at goal AND score gap ≥ 20 over #2`,
+          `<b>Holds column:</b> Count of "hold med" events within the phase. Highest hold count is highlighted in red bold`,
+          `<b>Best-not-current warning:</b> If the best-scoring regimen is not the most recent (current) one, an amber banner warns to consider revisiting that regimen`,
+          `<b>Hold event detection:</b> Notes containing "hold" or "held" AND one of: "med", "htn", "bp". Holds are day-level events (star markers on timeline) — they do not create gaps in medication bars`,
+          `<b>Medication change keywords:</b> start/started/begin/began/increase/increased/reduce/reduced/decrease/decreased/lower/lowered/change/changed/uptitrate/downtitrate/titrate/titrated, plus drug-first patterns (e.g., "irbesartan reduced to 225 mg")`,
+          `<b>Stop keywords:</b> stop/stopped/dc/discontinue/discontinued`,
         ]
       },
       {

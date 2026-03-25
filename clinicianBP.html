@@ -788,7 +788,6 @@
       const startDt = readings[0].t;
       const endDt = new Date(readings[readings.length-1].t.getTime() + 12*3600000);
       medIntervals = parseMedIntervals(readings, startDt, endDt);
-      medIntervals = BPCore.exciseHoldDays(medIntervals, holdEvents);
     } else {
       medIntervals = {};
     }
@@ -1123,16 +1122,25 @@
         const midX=(clampX0+clampX1)/2;
         const clampedWidth = clampX1 - clampX0;
         const visibleDays = widthDays * (clampedWidth / Math.max(x1 - x0, 1));
-        if(visibleDays>=SHORT_BAR_DAYS){
+        ctx.font='bold 9px system-ui';
+        const labelW = ctx.measureText(label).width;
+        if(visibleDays>=SHORT_BAR_DAYS && clampedWidth >= labelW + 6){
+          // Label fits inside the bar
           const tc=chooseSigTextColor(baseColor,alpha);
-          ctx.fillStyle=tc;ctx.font='bold 9px system-ui';ctx.textAlign='center';
+          ctx.fillStyle=tc;ctx.textAlign='center';
           ctx.fillText(label, midX, yCenter+3);
-        } else if (clampedWidth >= 20 && clampX1 < W - PAD.r - 30) {
-          // Callout to the right (only if bar is clearly visible as a distinct segment and there's room)
-          ctx.fillStyle='rgba(0,0,0,.85)';ctx.font='bold 9px system-ui';ctx.textAlign='left';
+        } else if (clampX1 + labelW + 6 < W - PAD.r) {
+          // Callout to the right of the bar
+          ctx.fillStyle='rgba(0,0,0,.85)';ctx.textAlign='left';
           ctx.fillText(label, clampX1+4, yCenter+3);
           ctx.strokeStyle='rgba(0,0,0,.25)';ctx.lineWidth=0.5;
           ctx.beginPath();ctx.moveTo(clampX1,yCenter);ctx.lineTo(clampX1+3,yCenter);ctx.stroke();
+        } else if (clampX0 - labelW - 6 > PAD.l) {
+          // Callout to the left of the bar
+          ctx.fillStyle='rgba(0,0,0,.85)';ctx.textAlign='right';
+          ctx.fillText(label, clampX0-4, yCenter+3);
+          ctx.strokeStyle='rgba(0,0,0,.25)';ctx.lineWidth=0.5;
+          ctx.beginPath();ctx.moveTo(clampX0,yCenter);ctx.lineTo(clampX0-3,yCenter);ctx.stroke();
         }
       }
     }

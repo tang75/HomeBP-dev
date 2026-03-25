@@ -337,9 +337,9 @@ const BPCore = (() => {
       .filter(s => s.length > 0);
   }
 
-  const MED_START_RE = /\b(start|started|begin|began|increase|increased|increasing|uptitrate|downtitrate|uptitrated|change|changed|titrate|titrated)\b\s+(?<drug>[A-Za-z][A-Za-z\- ]+?)(?:\s+|,|:|;|\b)(?:to\s+)?(?<dose>\d+(?:\.\d+)?)\s*(?<unit>mg)?(?:\s*(?:\/day|per\s*day|mg\/day))?(?:\s*(?<freq>q\.?\s*d\.?|b\.?\s*i\.?\s*d\.?|t\.?\s*i\.?\s*d\.?|q\.?\s*h\.?\s*s\.?|qod|qd|bid|tid|qid|qhs|daily|once\s+daily|twice\s+daily))?/gi;
+  const MED_START_RE = /\b(start|started|begin|began|increase|increased|increasing|uptitrate|downtitrate|uptitrated|change|changed|titrate|titrated|reduce|reduced|decrease|decreased|lower|lowered)\b\s+(?<drug>[A-Za-z][A-Za-z\- ]+?)(?:\s+|,|:|;|\b)(?:to\s+)?(?<dose>\d+(?:\.\d+)?)\s*(?<unit>mg)?(?:\s*(?:\/day|per\s*day|mg\/day))?(?:\s*(?<freq>q\.?\s*d\.?|b\.?\s*i\.?\s*d\.?|t\.?\s*i\.?\s*d\.?|q\.?\s*h\.?\s*s\.?|qod|qd|bid|tid|qid|qhs|daily|once\s+daily|twice\s+daily))?/gi;
   const MED_STOP_RE = /\b(stop|stopped|dc|discontinue|discontinued)\b\s+(?<drug>[A-Za-z][A-Za-z\- ]+)/gi;
-  const MED_CHANGE_RE = /\b(?<drug>[A-Za-z][A-Za-z\- ]+?)\b\s+(?:was\s+)?(?:increase(?:d)?|uptitrate(?:d)?|up[-\s]?titrate(?:d)?|change(?:d)?\s+to|titrate(?:d)?\s+to)\s+(?<dose>\d+(?:\.\d+)?)\s*(?<unit>mg)?(?:\s*(?:\/day|per\s*day|mg\/day))?(?:\s*(?<freq>q\.?\s*d\.?|b\.?\s*i\.?\s*d\.?|t\.?\s*i\.?\s*d\.?|q\.?\s*h\.?\s*s\.?|qod|qd|bid|tid|qid|qhs|daily|once\s+daily|twice\s+daily))?/gi;
+  const MED_CHANGE_RE = /\b(?<drug>[A-Za-z][A-Za-z\- ]+?)\b\s+(?:was\s+)?(?:increase(?:d)?|uptitrate(?:d)?|up[-\s]?titrate(?:d)?|change(?:d)?\s+to|titrate(?:d)?\s+to|reduce(?:d)?(?:\s+to)?|decrease(?:d)?(?:\s+to)?|lower(?:ed)?(?:\s+to)?|downtitrate(?:d)?(?:\s+to)?|down[-\s]?titrate(?:d)?(?:\s+to)?)\s+(?<dose>\d+(?:\.\d+)?)\s*(?<unit>mg)?(?:\s*(?:\/day|per\s*day|mg\/day))?(?:\s*(?<freq>q\.?\s*d\.?|b\.?\s*i\.?\s*d\.?|t\.?\s*i\.?\s*d\.?|q\.?\s*h\.?\s*s\.?|qod|qd|bid|tid|qid|qhs|daily|once\s+daily|twice\s+daily))?/gi;
   const MED_BARE_RE = /^(?<drug>[A-Za-z][A-Za-z\-]+)\s+(?<dose>\d+(?:\.\d+)?)\s*(?<unit>mg)(?:\s*(?:\/day|per\s*day|mg\/day))?(?:\s*(?<freq>q\.?\s*d\.?|b\.?\s*i\.?\s*d\.?|t\.?\s*i\.?\s*d\.?|q\.?\s*h\.?\s*s\.?|qod|qd|bid|tid|qid|qhs|daily|once\s+daily|twice\s+daily))?$/i;
 
   function canonDrug(name) {
@@ -531,6 +531,55 @@ const BPCore = (() => {
   }
 
   // =============================================
+  // HOLD-DAY GAPS: excise hold days from medication intervals
+  // Hold med = all HTN meds discontinued for that day only;
+  // meds resume on the next day without a hold note.
+  // =============================================
+  function exciseHoldDays(medIntervals, holdEvents) {
+    if (!holdEvents.length) return medIntervals;
+    // Build set of hold day keys (date-only)
+    const holdDaySet = new Set();
+    for (const h of holdEvents) {
+      holdDaySet.add(`${h.getFullYear()}-${h.getMonth()}-${h.getDate()}`);
+    }
+    const result = {};
+    for (const [drug, segs] of Object.entries(medIntervals)) {
+      const out = [];
+      for (const seg of segs) {
+        const [start, end, daily, sig, ongoing] = seg;
+        // Walk through this segment day by day, splitting around hold days
+        let curStart = null;
+        const d = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+        const endDay = new Date(end.getFullYear(), end.getMonth(), end.getDate());
+        while (d <= endDay) {
+          const key = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+          if (holdDaySet.has(key)) {
+            // Close current sub-interval if open
+            if (curStart !== null) {
+              const segEnd = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+              if (segEnd > curStart) out.push([curStart, segEnd, daily, sig, false]);
+              curStart = null;
+            }
+          } else {
+            if (curStart === null) {
+              curStart = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+            }
+          }
+          d.setDate(d.getDate() + 1);
+        }
+        // Close final sub-interval
+        if (curStart !== null) {
+          // Preserve original end time (not just midnight) and ongoing flag for the last piece
+          const isLastPiece = curStart <= endDay;
+          out.push([curStart, end, daily, sig, isLastPiece ? !!ongoing : false]);
+        }
+      }
+      if (out.length) result[drug] = out;
+    }
+    return result;
+  }
+
+  // =============================================
   // PROCESS DATA (main pipeline)
   // Accepts config: { amStart, amEnd }
   // Returns { readings, medIntervals, holdEvents }
@@ -543,6 +592,7 @@ const BPCore = (() => {
       const startDt = readings[0].t;
       const endDt = new Date(readings[readings.length-1].t.getTime() + 12*3600000);
       medIntervals = parseMedIntervals(readings, startDt, endDt);
+      medIntervals = exciseHoldDays(medIntervals, holdEvents);
     }
     return { readings, medIntervals, holdEvents };
   }
@@ -802,7 +852,7 @@ const BPCore = (() => {
     classifyBP, reclassifyForGoal,
 
     // Data pipeline
-    buildReadings, findHoldEventsFromReadings, processData,
+    buildReadings, findHoldEventsFromReadings, exciseHoldDays, processData,
 
     // Medication engine
     splitNoteLines, canonDrug, canonFreq, computeDailyDose, medSigLabel,

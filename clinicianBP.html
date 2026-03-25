@@ -8,7 +8,7 @@
   <meta http-equiv="Expires" content="0" />
   <title>Clinician View: Home BP Timeline</title>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-  <script src="bp-core.js?v=6"></script>
+  <script src="bp-core.js?v=7"></script>
   <style>
     :root { --bg:#ffffff; --card:#ffffff; --muted:#5a6a7a; --text:#1a1a2e; --accent:#2c5dcd; --warn:#b87800; --danger:#c62828; --ok:#1b7a3d; --canvas-bg:#ffffff; }
     *{box-sizing:border-box;}
@@ -788,6 +788,7 @@
       const startDt = readings[0].t;
       const endDt = new Date(readings[readings.length-1].t.getTime() + 12*3600000);
       medIntervals = parseMedIntervals(readings, startDt, endDt);
+      medIntervals = BPCore.exciseHoldDays(medIntervals, holdEvents);
     } else {
       medIntervals = {};
     }
@@ -1657,20 +1658,38 @@
         { pct: p.severe, color: '#FF0000', label: 'Sev', hatched: true },
       ];
 
+      // Collect visible segments for annotation
+      const visSegs = segments.filter(s => s.pct >= 0.5);
       let barHtml = '<div style="display:flex; align-items:center; gap:6px;">';
-      barHtml += '<div class="kci-bar-track" style="height:22px; border-radius:4px; min-width:180px;">';
-      for (const seg of segments) {
-        if (seg.pct < 0.5) continue; // skip negligible segments
+      barHtml += '<div style="position:relative; flex:1; min-width:180px;">';
+      // Main bar
+      barHtml += '<div class="kci-bar-track" style="height:22px; border-radius:4px;">';
+      for (const seg of visSegs) {
         const rounded = Math.round(seg.pct);
-        // Show label inside if segment wide enough; use smaller font for narrow segments
-        const showLabel = seg.pct >= 6;
+        const canFitInside = seg.pct >= 6;
         const fontSize = seg.pct >= 12 ? '10px' : '8px';
         const textColor = seg.color === '#00C853' ? 'rgba(0,0,0,.7)' : '#fff';
         const hatchClass = seg.hatched ? ' hatched-severe' : '';
         const bgStyle = seg.hatched ? '' : `background:${seg.color};`;
         barHtml += `<div class="kci-bar-seg${hatchClass}" style="width:${seg.pct}%; ${bgStyle} display:flex; align-items:center; justify-content:center; font-size:${fontSize}; font-weight:700; color:${textColor}; overflow:hidden; white-space:nowrap;">`;
-        if (showLabel) barHtml += `${rounded}%`;
+        if (canFitInside) barHtml += `${rounded}%`;
         barHtml += `</div>`;
+      }
+      barHtml += '</div>';
+      // External labels for narrow segments (< 6%) with pointer lines
+      const narrowSegs = visSegs.filter(s => s.pct >= 1 && s.pct < 6);
+      if (narrowSegs.length) {
+        barHtml += '<div style="position:relative; height:14px; margin-top:1px;">';
+        let cumPct = 0;
+        for (const seg of visSegs) {
+          const rounded = Math.round(seg.pct);
+          if (seg.pct >= 1 && seg.pct < 6) {
+            const midPct = cumPct + seg.pct / 2;
+            barHtml += `<span style="position:absolute; left:${midPct}%; transform:translateX(-50%); font-size:8px; font-weight:700; color:${seg.color}; white-space:nowrap; line-height:1;">${rounded}%</span>`;
+          }
+          cumPct += seg.pct;
+        }
+        barHtml += '</div>';
       }
       barHtml += '</div>';
       barHtml += `<span style="font-size:10px; color:var(--muted); white-space:nowrap;">n=${p.n}</span>`;

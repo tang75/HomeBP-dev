@@ -1412,13 +1412,22 @@
       const phaseLabel = boundaries[bi].changeLabel;
       const isLast = (bi === boundaries.length - 1);
 
-      // Collect subsets for both windows first
+      // Collect subsets for both windows first.
+      // For historical (non-last) phases, use the last N readings that fall
+      // within that phase's actual date range — ignore lookbackMonths so every
+      // regimen the patient has tried is represented in the comparison.
       const subsets = {};
       for (const w of windows) {
         if (isLast) {
           subsets[w] = getRecentReadings(rs, recentWeeks, w);
         } else {
-          subsets[w] = getLastNReadings(rs, boundaries[bi + 1].date, N, lookbackMonths, w);
+          const phaseStart = boundaries[bi].date;
+          const phaseEnd = boundaries[bi + 1].date;
+          const inPhase = rs.filter(r => r.t >= phaseStart && r.t < phaseEnd && (w === 'All' || r.window === w));
+          inPhase.sort((a, b) => b.t - a.t);
+          const taken = inPhase.slice(0, N);
+          taken.sort((a, b) => a.t - b.t);
+          subsets[w] = taken;
         }
       }
 
@@ -1578,14 +1587,21 @@
       const pmRow = tableRows[bi * 2 + 1];
       if (!amRow || !pmRow) continue;
       const totalN = amRow.n + pmRow.n;
-      if (totalN < 3) continue;
+      if (totalN < 1) continue; // only skip truly empty phases; show every regimen that has any readings
       const pStart = boundaries[bi].date;
       const pEnd = (bi + 1 < boundaries.length) ? boundaries[bi + 1].date : rs[rs.length - 1].t;
       const phaseDays = Math.max(1, daysBetween(pStart, pEnd));
       const phaseHolds = holdEvents.filter(h => h.getTime() >= pStart.getTime() && h.getTime() < pEnd.getTime());
       const allReadingsPhase = [...(function() {
         if (bi === boundaries.length - 1) return getRecentReadings(rs, recentWeeks, 'All');
-        return BPCore.getRecentReadingsBeforeDate(rs, boundaries[bi + 1].date, recentWeeks, 'All');
+        // Last `recentWeeks` of the phase, but not earlier than the phase start
+        const phaseStartT = boundaries[bi].date;
+        const win = BPCore.getRecentReadingsBeforeDate(rs, boundaries[bi + 1].date, recentWeeks, 'All')
+          .filter(r => r.t >= phaseStartT);
+        if (win.length) return win;
+        // Fallback: if the phase ended before the recent window, use all in-phase readings
+        // so every historical regimen still contributes to the comparison
+        return rs.filter(r => r.t >= phaseStartT && r.t < boundaries[bi + 1].date);
       })()];
       const allStats = phaseStatsFromReadings(allReadingsPhase);
       const gp = getGoal();
@@ -2761,9 +2777,12 @@
       {
         title: 'Treatment Plan Comparison',
         rules: [
-          `<b>Location:</b> Medication Response tab — requires ≥ 2 regimen phases with ≥ 3 readings each`,
+          `<b>Location:</b> Medication Response tab — requires ≥ 2 regimen phases with ≥ 1 reading each`,
           `<b>Phase detection:</b> A new phase begins when the active medication regimen changes (drug added, removed, or dose changed). Boundaries within 2 days are merged`,
-          `<b>Data window:</b> Each phase uses the most recent ${recentWeeks} week(s) of readings before the phase ended (or before today for the current phase). All phases use the same window size for apples-to-apples comparison. Configurable via "Recent window (wks)" in the settings bar`,
+          `<b>Coverage:</b> Every regimen the patient has tried appears in the comparison, regardless of how long ago it was used. The "Lookback (months)" setting does NOT restrict which regimens are included — historical trials are always shown because each one contributes clinical information`,
+          `<b>Data window (current phase):</b> Most recent ${recentWeeks} week(s) of readings`,
+          `<b>Data window (historical phases):</b> Last ${recentWeeks} week(s) of readings that fall within the phase's actual date range. If the phase ended before that window existed (e.g., phase was only a few days long), the stacked distribution uses all in-phase readings as a fallback so every regimen contributes`,
+          `<b>Per-window phase rows (AM/PM table):</b> For each phase, uses the last N=${N} readings that fall within that phase's actual start–end range (ignores Lookback setting)`,
           `<b>Stacked distribution bar:</b> Each row shows a stacked bar with 5 categories: Low (purple, SBP ≤ ${BPCore.HYPO_SBP_MAX}), At Goal (green, SBP < ${goal.sys} and DBP < ${goal.dia}), Near Goal (amber, within 2 mmHg of goal but not at goal), Above Goal (red, above near-goal threshold), Severe (hatched red, SBP ≥ ${BPCore.SEVERE_SBP_MIN} or DBP ≥ ${BPCore.SEVERE_DBP_MIN})`,
           `<b>Percentage labels:</b> Shown inside segments ≥ 6%. Segments 1–5% show labels below the bar in the segment's color. Segments < 1% are hidden`,
           `<b>Scoring formula:</b> Score = (%at goal) − (%severe) − 5 × (hold count). Higher = better. Uses raw hold count, not extrapolated monthly rate, to avoid disproportionate penalties for short phases`,

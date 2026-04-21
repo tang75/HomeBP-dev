@@ -14,6 +14,14 @@
 # Claude/IDE
 .claude/
 
+# Node / npm
+node_modules/
+package.json
+package-lock.json
+
+# Backup / old versions of pages
+index-clinician.html
+
 # Test data
 test_*
 files-*/

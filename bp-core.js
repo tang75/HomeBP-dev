@@ -365,13 +365,11 @@ const BPCore = (() => {
     return doseMg * mult;
   }
 
-  function medSigLabel(med, dose) {
-    const nm = med.toLowerCase();
-    if (nm==='valsartan') { return dose<=80.001?'80 mg qd':'80 mg bid'; }
-    if (nm==='metoprolol') { return `${dose} mg qd`; }
-    if (nm==='candesartan') { return `${dose} mg qd`; }
-    if (nm==='irbesartan') { return `${dose} mg qd`; }
-    return `${dose} mg qd`;
+  // Fallback dose label, used only when the Notes did not state a frequency.
+  // Drug-agnostic: shows the total daily dose without inventing a schedule.
+  // Callers prefer the actual parsed sig (e.g. "80 mg bid") whenever present.
+  function medSigLabel(med, dailyDose) {
+    return `${dailyDose} mg/day`;
   }
 
   function parseMedIntervals(readingsAll, startDt, endDt) {
@@ -715,11 +713,11 @@ const BPCore = (() => {
       const activeMeds = [];
       for (const [drug, segs] of Object.entries(medIntervals)) {
         for (const seg of segs) {
-          const [s, e, daily] = seg;
+          const [s, e, daily, sig] = seg;
           if (!s || !e) continue;
           if (s.getTime() <= ts && e.getTime() >= ts) {
-            const sigLabel = daily != null ? `${drug} ${medSigLabel(drug, daily)}` : drug;
-            activeMeds.push(sigLabel);
+            const doseLabel = sig || (daily != null ? medSigLabel(drug, daily) : null);
+            activeMeds.push(doseLabel ? `${drug} ${doseLabel}` : drug);
             break;
           }
         }
@@ -750,8 +748,8 @@ const BPCore = (() => {
       if (readings.length > 0) {
         const dataEnd = readings[readings.length - 1].t;
         if (end.getTime() >= dataEnd.getTime() - 86400000) {
-          const label = daily != null ? `${drug} ${medSigLabel(drug, daily)}` : drug;
-          current.push(label);
+          const doseLabel = sig || (daily != null ? medSigLabel(drug, daily) : null);
+          current.push(doseLabel ? `${drug} ${doseLabel}` : drug);
         }
       }
     }

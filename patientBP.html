@@ -166,7 +166,7 @@
       <div class="legend-item"><span style="display:inline-block;width:22px;height:0;border-top:2px dashed #666;vertical-align:middle;"></span> Targets (SBP &lt;130, DBP &lt;80)</div>
       <div class="legend-item"><span style="font-size:20px;">&#9733;</span> Held BP meds</div>
     </div>
-    <div class="no-print" style="margin-top:8px; font-size:14px; color:var(--muted); text-align:center;">Tip: hold <b>Ctrl</b> (or <b>&#8984;</b>) and scroll over a chart to zoom &middot; double-click to reset</div>
+    <div class="no-print" style="margin-top:8px; font-size:14px; color:var(--muted); text-align:center;">Tip: hold <b>Ctrl</b> (or <b>&#8984;</b>) and scroll over a chart to zoom &middot; drag to pan when zoomed &middot; double-click to reset</div>
   </div>
 
   <!-- KPI Dashboard -->
@@ -295,6 +295,8 @@
   // Timeline zoom state (Ctrl/Cmd + wheel; cursor-centered). null = full data extent.
   let zoomWindow = null, fullExtent = null;
   const ZOOM_MIN_SPAN_MS = 12 * 3600000; // don't zoom in tighter than 12h
+  // Click-drag pan state (only active while zoomed in).
+  let isPanning = false, panStartX = 0, panStartWin = null, panCanvas = null;
   function setupCanvas(canvas, displayW, displayH) {
     const dpr = printDPR > 0 ? printDPR : Math.max(3, window.devicePixelRatio||1);
     canvas.width = displayW*dpr;
@@ -657,6 +659,7 @@
   function attachBPHover(canvas, rs, xMinMs, xMaxMs) {
     ensureTip();
     canvas.onmousemove=e=>{
+      if(isPanning){tip.style.display='none';return;}
       if(!rs.length){tip.style.display='none';return;}
       const rect=canvas.getBoundingClientRect();
       const W=rect.width, H=rect.height;
@@ -709,6 +712,7 @@
   function attachMedHover(canvas) {
     ensureTip();
     canvas.onmousemove = e => {
+      if(isPanning){tip.style.display='none';return;}
       const rect = canvas.getBoundingClientRect();
       const mx = e.clientX - rect.left;
       const my = e.clientY - rect.top;
@@ -846,6 +850,9 @@
     attachBPHover($('chartMorning'), morning, xMinMs, xMaxMs);
     attachBPHover($('chartEvening'), ae, xMinMs, xMaxMs);
     attachMedHover($('chartMeds'));
+    // Cursor affordance: grab when panning is available (i.e. zoomed in).
+    const cur = isPanning ? 'grabbing' : (zoomWindow ? 'grab' : 'default');
+    $('chartMorning').style.cursor = cur; $('chartEvening').style.cursor = cur; $('chartMeds').style.cursor = cur;
   }
 
   // Ctrl/Cmd + wheel zooms the timeline, centered on the cursor. Plain wheel
@@ -876,14 +883,48 @@
     drawTimeline(getRangeFiltered());
   }
 
-  // Wire wheel-zoom + double-click-reset onto the three timeline canvases (once).
+  // Click-drag panning — only when zoomed in. Uses window-level move/up so the
+  // drag keeps working even if the pointer leaves the chart.
+  function startPan(canvas, e) {
+    if (!zoomWindow || !fullExtent || !readings.length || e.button !== 0) return;
+    e.preventDefault();
+    isPanning = true; panCanvas = canvas; panStartX = e.clientX;
+    const [vMin, vMax] = visibleWindow(fullExtent.minMs, fullExtent.maxMs);
+    panStartWin = { minMs: vMin, maxMs: vMax };
+    canvas.style.cursor = 'grabbing';
+  }
+  function dragPan(e) {
+    if (!isPanning || !panCanvas || !panStartWin) return;
+    const rect = panCanvas.getBoundingClientRect();
+    const plotW = Math.max(1, rect.width - PAD.l - PAD.r);
+    const span = panStartWin.maxMs - panStartWin.minMs;
+    const dt = -((e.clientX - panStartX) / plotW) * span; // drag right → earlier times
+    const fullMin = fullExtent.minMs, fullMax = fullExtent.maxMs;
+    let lo = panStartWin.minMs + dt, hi = panStartWin.maxMs + dt;
+    if (lo < fullMin) { lo = fullMin; hi = lo + span; }
+    if (hi > fullMax) { hi = fullMax; lo = hi - span; }
+    zoomWindow = { minMs: lo, maxMs: hi };
+    drawTimeline(getRangeFiltered());
+  }
+  function endPan() {
+    if (!isPanning) return;
+    isPanning = false; panStartWin = null;
+    if (panCanvas) panCanvas.style.cursor = zoomWindow ? 'grab' : 'default';
+    panCanvas = null;
+  }
+
+  // Wire wheel-zoom, double-click-reset, and click-drag pan onto the three
+  // timeline canvases (once).
   function setupTimelineZoom() {
     for (const id of ['chartMorning','chartEvening','chartMeds']) {
       const c = $(id);
       if (!c) continue;
       c.addEventListener('wheel', e => applyWheelZoom(c, e), { passive: false });
       c.addEventListener('dblclick', resetZoom);
+      c.addEventListener('mousedown', e => startPan(c, e));
     }
+    window.addEventListener('mousemove', dragPan);
+    window.addEventListener('mouseup', endPan);
   }
 
   function renderAll() {

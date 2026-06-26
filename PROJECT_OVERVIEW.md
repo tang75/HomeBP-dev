@@ -156,8 +156,10 @@ identifies the drug** and whose **shading darkens with higher dose**.
   and hold-day stars; plus a medication-bar panel beneath, and a "recent N-week
   average" summary card. **Zoom:** hold **Ctrl** (or **⌘**) and scroll over any chart
   to zoom the time axis, centered on the cursor; the three panels stay aligned because
-  they share one time window. Plain scrolling still moves the page. **Double-click**
-  resets to the full range. (Available in both the clinician and patient views.)
+  they share one time window. Plain scrolling still moves the page. When zoomed in,
+  **click-drag** pans the view sideways (cursor shows a grab hand), and
+  **double-click** resets to the full range. (Available in both the clinician and
+  patient views.)
 - **Medication Response** — two tables:
   - a **phase table** showing BP statistics for each medication regimen period; and
   - a **Treatment Plan Comparison** that ranks the regimens (a score rewarding

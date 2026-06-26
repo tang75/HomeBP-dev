@@ -166,7 +166,7 @@
       <div class="legend-item"><span style="display:inline-block;width:22px;height:0;border-top:2px dashed #666;vertical-align:middle;"></span> Targets (SBP &lt;130, DBP &lt;80)</div>
       <div class="legend-item"><span style="font-size:20px;">&#9733;</span> Held BP meds</div>
     </div>
-    <div class="no-print" style="margin-top:8px; font-size:14px; color:var(--muted); text-align:center;">Tip: hold <b>Ctrl</b> (or <b>&#8984;</b>) and scroll over a chart to zoom &middot; drag to pan when zoomed &middot; double-click to reset</div>
+    <div class="no-print" style="margin-top:8px; font-size:14px; color:var(--muted); text-align:center;">Tip: scroll over a chart to zoom &middot; drag to pan when zoomed &middot; double-click to reset &middot; scroll in the page margins to move the page</div>
   </div>
 
   <!-- KPI Dashboard -->
@@ -855,10 +855,9 @@
     $('chartMorning').style.cursor = cur; $('chartEvening').style.cursor = cur; $('chartMeds').style.cursor = cur;
   }
 
-  // Ctrl/Cmd + wheel zooms the timeline, centered on the cursor. Plain wheel
-  // is left alone so the page still scrolls normally.
+  // Scroll-wheel zooms the timeline, centered on the cursor. (The page can still
+  // be scrolled using the margins outside the charts.)
   function applyWheelZoom(canvas, e) {
-    if (!(e.ctrlKey || e.metaKey)) return;
     if (!readings.length || !fullExtent) return;
     e.preventDefault();
     const rect = canvas.getBoundingClientRect();

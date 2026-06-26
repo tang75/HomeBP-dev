@@ -246,17 +246,31 @@
         <span class="muted small">/</span>
         <input id="goalDia" type="number" value="85" style="width:70px" />
       </div>
-      <button id="thrBtn" title="Set custom Severe and Low thresholds">Severe / Low&hellip;</button>
-      <div class="pill" id="thrPanel" style="display:none">
+      <div class="pill" id="severePill">
+        <label style="font-weight:700;">SEVERE</label>
+        <select id="severeProfile">
+          <option value="standard" selected>Standard (&ge;160/100)</option>
+          <option value="custom">Custom</option>
+        </select>
+      </div>
+      <div class="pill" id="customSeverePill" style="display:none">
         <label style="font-weight:700;">Severe &ge;</label>
-        <input id="severeSys" type="number" min="100" max="260" value="160" style="width:60px" />
+        <input id="severeSys" type="number" min="100" max="260" value="160" style="width:64px" />
         <span class="muted small">/</span>
-        <input id="severeDia" type="number" min="50" max="160" value="100" style="width:60px" />
-        <label style="font-weight:700; margin-left:10px;">Low &lt;</label>
-        <input id="lowSys" type="number" min="60" max="160" value="100" style="width:60px" />
+        <input id="severeDia" type="number" min="50" max="160" value="100" style="width:64px" />
+      </div>
+      <div class="pill" id="lowPill">
+        <label style="font-weight:700;">LOW</label>
+        <select id="lowProfile">
+          <option value="standard" selected>Standard (&lt;100/60)</option>
+          <option value="custom">Custom</option>
+        </select>
+      </div>
+      <div class="pill" id="customLowPill" style="display:none">
+        <label style="font-weight:700;">Low &lt;</label>
+        <input id="lowSys" type="number" min="60" max="160" value="100" style="width:64px" />
         <span class="muted small">/</span>
-        <input id="lowDia" type="number" min="30" max="100" value="60" style="width:60px" />
-        <button id="thrReset" style="margin-left:8px; font-size:11px; padding:4px 10px;">Reset to defaults</button>
+        <input id="lowDia" type="number" min="30" max="100" value="60" style="width:64px" />
       </div>
       <button id="printBtn">Print / PDF</button>
       <button id="clearBtn" style="display:none;">Clear Data</button>
@@ -380,7 +394,7 @@
         <div class="legend-item"><span style="display:inline-block;width:18px;height:0;border-top:2px dashed #888;vertical-align:middle;"></span> Targets (SBP &lt;140, DBP &lt;90)</div>
         <div class="legend-item"><span style="font-size:16px;">&#9733;</span> Hold HTN meds</div>
       </div>
-      <div class="no-print" style="margin-top:6px; font-size:11.5px; color:var(--muted); text-align:center;">Tip: hold <b>Ctrl</b> (or <b>&#8984;</b>) and scroll over a chart to zoom the timeline &middot; drag to pan when zoomed &middot; double-click to reset</div>
+      <div class="no-print" style="margin-top:6px; font-size:11.5px; color:var(--muted); text-align:center;">Tip: scroll over a chart to zoom the timeline &middot; drag to pan when zoomed &middot; double-click to reset &middot; scroll in the page margins to move the page</div>
     </div>
 
     <div class="card" style="margin-top:14px;">
@@ -565,21 +579,30 @@
   function getGoalConfig() {
     return { profile: $('profile').value, customSys: +$('goalSys').value||135, customDia: +$('goalDia').value||85 };
   }
-  // Configurable Severe / Low cutoffs, falling back to the built-in defaults.
+  // Configurable Severe / Low cutoffs (GOAL-style: Standard preset or Custom).
+  // 'standard' uses the built-in defaults; 'custom' uses the entered values.
   function getThresholdConfig() {
+    const sevCustom = $('severeProfile').value === 'custom';
+    const lowCustom = $('lowProfile').value === 'custom';
     return {
-      severeSys: +$('severeSys').value || SEVERE_SBP_MIN,
-      severeDia: +$('severeDia').value || SEVERE_DBP_MIN,
-      lowSys: +$('lowSys').value || HYPO_SBP_MAX,
-      lowDia: +$('lowDia').value || HYPO_DBP_MAX,
+      severeSys: sevCustom ? (+$('severeSys').value || SEVERE_SBP_MIN) : SEVERE_SBP_MIN,
+      severeDia: sevCustom ? (+$('severeDia').value || SEVERE_DBP_MIN) : SEVERE_DBP_MIN,
+      lowSys: lowCustom ? (+$('lowSys').value || HYPO_SBP_MAX) : HYPO_SBP_MAX,
+      lowDia: lowCustom ? (+$('lowDia').value || HYPO_DBP_MAX) : HYPO_DBP_MAX,
     };
   }
+  // Show the custom-entry pill only when its dropdown is set to "Custom".
+  function updateThresholdPills() {
+    $('customSeverePill').style.display = $('severeProfile').value === 'custom' ? 'inline-flex' : 'none';
+    $('customLowPill').style.display = $('lowProfile').value === 'custom' ? 'inline-flex' : 'none';
+  }
   function saveThresholds() {
-    const t = getThresholdConfig();
-    localStorage.setItem('hbp_severeSys', t.severeSys);
-    localStorage.setItem('hbp_severeDia', t.severeDia);
-    localStorage.setItem('hbp_lowSys', t.lowSys);
-    localStorage.setItem('hbp_lowDia', t.lowDia);
+    localStorage.setItem('hbp_severeProfile', $('severeProfile').value);
+    localStorage.setItem('hbp_lowProfile', $('lowProfile').value);
+    localStorage.setItem('hbp_severeSys', $('severeSys').value);
+    localStorage.setItem('hbp_severeDia', $('severeDia').value);
+    localStorage.setItem('hbp_lowSys', $('lowSys').value);
+    localStorage.setItem('hbp_lowDia', $('lowDia').value);
   }
   function getAMConfig() {
     return { amStart: +$('amStart').value, amEnd: +$('amEnd').value };
@@ -2957,10 +2980,9 @@
     $('chartMorning').style.cursor = cur; $('chartEvening').style.cursor = cur; $('chartMeds').style.cursor = cur;
   }
 
-  // Ctrl/Cmd + wheel zooms the timeline, centered on the cursor. Plain wheel
-  // is left alone so the page still scrolls normally.
+  // Scroll-wheel zooms the timeline, centered on the cursor. (The page can still
+  // be scrolled using the margins outside the charts.)
   function applyWheelZoom(canvas, e) {
-    if (!(e.ctrlKey || e.metaKey)) return;
     if (!readings.length || !fullExtent) return;
     e.preventDefault();
     const rect = canvas.getBoundingClientRect();
@@ -3166,26 +3188,25 @@
   $('amStart').addEventListener('input',()=>{processData();renderAll();});
   $('amEnd').addEventListener('input',()=>{processData();renderAll();});
 
-  // Severe / Low threshold control: toggle panel, live-apply, persist, reset.
-  $('thrBtn').addEventListener('click', () => {
-    const p = $('thrPanel');
-    p.style.display = (p.style.display === 'none' || !p.style.display) ? 'inline-flex' : 'none';
-  });
-  for (const id of ['severeSys','severeDia','lowSys','lowDia']) {
-    $(id).addEventListener('input', () => { saveThresholds(); renderAll(); });
+  // Severe / Low thresholds — GOAL-style dropdowns, each with a Custom option.
+  for (const sel of ['severeProfile','lowProfile']) {
+    $(sel).addEventListener('change', () => { updateThresholdPills(); saveThresholds(); renderAll(); });
   }
-  $('thrReset').addEventListener('click', () => {
-    $('severeSys').value = SEVERE_SBP_MIN; $('severeDia').value = SEVERE_DBP_MIN;
-    $('lowSys').value = HYPO_SBP_MAX; $('lowDia').value = HYPO_DBP_MAX;
-    saveThresholds(); renderAll();
-  });
-  // Restore saved Severe/Low thresholds
+  for (const id of ['severeSys','severeDia','lowSys','lowDia']) {
+    // 'input' updates live while typing; 'change' commits on blur (click-out) / Enter.
+    $(id).addEventListener('input', () => { saveThresholds(); renderAll(); });
+    $(id).addEventListener('change', () => { saveThresholds(); renderAll(); });
+  }
+  // Restore saved Severe/Low profiles + custom values
   (() => {
-    const map = { hbp_severeSys:'severeSys', hbp_severeDia:'severeDia', hbp_lowSys:'lowSys', hbp_lowDia:'lowDia' };
-    for (const [k, id] of Object.entries(map)) {
+    const valMap = { hbp_severeSys:'severeSys', hbp_severeDia:'severeDia', hbp_lowSys:'lowSys', hbp_lowDia:'lowDia' };
+    for (const [k, id] of Object.entries(valMap)) {
       const v = localStorage.getItem(k);
       if (v != null && v !== '') $(id).value = v;
     }
+    const sp = localStorage.getItem('hbp_severeProfile'); if (sp) $('severeProfile').value = sp;
+    const lp = localStorage.getItem('hbp_lowProfile'); if (lp) $('lowProfile').value = lp;
+    updateThresholdPills();
   })();
   function updateGoalHighlight() {
     const prof = $('profile').value;

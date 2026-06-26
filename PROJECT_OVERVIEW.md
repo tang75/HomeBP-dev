@@ -120,8 +120,9 @@ significant / major").
 
 > **Decision (#3 from the review):** Thresholds should ship with **sensible defaults
 > but be adjustable per patient.** Implemented for the **goal** and now for **Severe
-> and Low** — the clinician view has a "Severe / Low…" control (button + panel, right
-> after GOAL) with editable SBP/DBP cutoffs and a reset-to-defaults. Changing them
+> and Low** — the clinician view has two GOAL-style dropdowns (SEVERE and LOW, right
+> after GOAL), each offering **Standard** (the built-in default) or **Custom**, where
+> Custom reveals editable SBP/DBP inputs. Changing them
 > flows through everything (bar colors, the legend's parenthetical definitions, the
 > severe/low percentages, the clinical insights, the phase table, and the regimen
 > score) via `reclassifyForGoal(readings, goal, thresholds)` in `bp-core.js`. Persisted
@@ -154,12 +155,12 @@ identifies the drug** and whose **shading darkens with higher dose**.
 - **Timeline** — the main visualization: two BP panels (Morning, Afternoon/Evening)
   with color-coded bars, heart-rate line, goal/target lines, severe-reading labels,
   and hold-day stars; plus a medication-bar panel beneath, and a "recent N-week
-  average" summary card. **Zoom:** hold **Ctrl** (or **⌘**) and scroll over any chart
-  to zoom the time axis, centered on the cursor; the three panels stay aligned because
-  they share one time window. Plain scrolling still moves the page. When zoomed in,
-  **click-drag** pans the view sideways (cursor shows a grab hand), and
-  **double-click** resets to the full range. (Available in both the clinician and
-  patient views.)
+  average" summary card. **Zoom:** scroll the wheel over any chart to zoom the time
+  axis, centered on the cursor; the three panels stay aligned because they share one
+  time window. (The page itself still scrolls when the pointer is in the margins
+  outside the charts.) When zoomed in, **click-drag** pans the view sideways (cursor
+  shows a grab hand), and **double-click** resets to the full range. (Available in both
+  the clinician and patient views.)
 - **Medication Response** — two tables:
   - a **phase table** showing BP statistics for each medication regimen period; and
   - a **Treatment Plan Comparison** that ranks the regimens (a score rewarding

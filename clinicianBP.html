@@ -368,6 +368,7 @@
         <div class="legend-item"><span style="display:inline-block;width:18px;height:0;border-top:2px dashed #888;vertical-align:middle;"></span> Targets (SBP &lt;140, DBP &lt;90)</div>
         <div class="legend-item"><span style="font-size:16px;">&#9733;</span> Hold HTN meds</div>
       </div>
+      <div class="no-print" style="margin-top:6px; font-size:11.5px; color:var(--muted); text-align:center;">Tip: hold <b>Ctrl</b> (or <b>&#8984;</b>) and scroll over a chart to zoom the timeline &middot; double-click to reset</div>
     </div>
 
     <div class="card" style="margin-top:14px;">
@@ -781,6 +782,7 @@
   // PROCESS DATA (main pipeline)
   // =============================================
   function processData() {
+    zoomWindow = null; // new/reprocessed data resets any active zoom
     BPCore.resetMedColors(); // reset so colors are assigned in med-order
     buildReadings();
     findHoldEventsFromReadings();
@@ -806,6 +808,9 @@
   // CANVAS SETUP
   // =============================================
   let printDPR = 0; // 0 = use screen DPR; >0 = override for print
+  // Timeline zoom state (Ctrl/Cmd + wheel; cursor-centered). null = full data extent.
+  let zoomWindow = null, fullExtent = null;
+  const ZOOM_MIN_SPAN_MS = 12 * 3600000; // don't zoom in tighter than 12h
   function setupCanvas(canvas, displayW, displayH) {
     const dpr = printDPR > 0 ? printDPR : Math.max(3, window.devicePixelRatio||1);
     canvas.width = displayW*dpr;
@@ -2869,6 +2874,79 @@
   // =============================================
   // RENDER ALL
   // =============================================
+  // Compute the visible time window: the full data extent, narrowed by any
+  // active zoom and clamped so it can never exceed the full extent.
+  function visibleWindow(fullMin, fullMax) {
+    if (!zoomWindow) return [fullMin, fullMax];
+    const fullSpan = fullMax - fullMin;
+    let span = Math.min(zoomWindow.maxMs - zoomWindow.minMs, fullSpan);
+    if (span < ZOOM_MIN_SPAN_MS) span = ZOOM_MIN_SPAN_MS;
+    let lo = zoomWindow.minMs, hi = lo + span;
+    if (lo < fullMin) { lo = fullMin; hi = lo + span; }
+    if (hi > fullMax) { hi = fullMax; lo = Math.max(fullMin, hi - span); }
+    return [lo, hi];
+  }
+
+  // Draw the three time-aligned panels for the given readings, honoring zoom.
+  function drawTimeline(rs) {
+    const morning = rs.filter(x=>x.window==='Morning');
+    const ae = rs.filter(x=>x.window==='Afternoon/Evening');
+    let fullMin, fullMax;
+    if (rs.length) {
+      fullMin = rs[0].t.getTime() - 12*3600000;
+      fullMax = rs[rs.length-1].t.getTime() + 12*3600000;
+    } else {
+      const now = Date.now();
+      fullMin = now - 30*86400000; fullMax = now;
+    }
+    fullExtent = { minMs: fullMin, maxMs: fullMax };
+    const [xMinMs, xMaxMs] = visibleWindow(fullMin, fullMax);
+    drawBPPanel($('chartMorning'), morning, 'Morning BP', xMinMs, xMaxMs, holdEvents, 'Morning');
+    drawBPPanel($('chartEvening'), ae, 'Afternoon/Evening BP', xMinMs, xMaxMs, holdEvents, 'Afternoon/Evening');
+    drawMedPanel($('chartMeds'), medIntervals, xMinMs, xMaxMs);
+    attachBPHover($('chartMorning'), morning, xMinMs, xMaxMs);
+    attachBPHover($('chartEvening'), ae, xMinMs, xMaxMs);
+    attachMedHover($('chartMeds'));
+  }
+
+  // Ctrl/Cmd + wheel zooms the timeline, centered on the cursor. Plain wheel
+  // is left alone so the page still scrolls normally.
+  function applyWheelZoom(canvas, e) {
+    if (!(e.ctrlKey || e.metaKey)) return;
+    if (!readings.length || !fullExtent) return;
+    e.preventDefault();
+    const rect = canvas.getBoundingClientRect();
+    const plotW = Math.max(1, rect.width - PAD.l - PAD.r);
+    let frac = (e.clientX - rect.left - PAD.l) / plotW;
+    frac = Math.max(0, Math.min(1, frac));
+    const fullMin = fullExtent.minMs, fullMax = fullExtent.maxMs;
+    const fullSpan = fullMax - fullMin;
+    const [vMin, vMax] = visibleWindow(fullMin, fullMax);
+    const tCursor = vMin + frac * (vMax - vMin);
+    let newSpan = (vMax - vMin) * (e.deltaY < 0 ? 0.8 : 1.25);
+    if (newSpan >= fullSpan) { zoomWindow = null; drawTimeline(getRangeFiltered()); return; }
+    if (newSpan < ZOOM_MIN_SPAN_MS) newSpan = ZOOM_MIN_SPAN_MS;
+    const lo = tCursor - frac * newSpan;
+    zoomWindow = { minMs: lo, maxMs: lo + newSpan };
+    drawTimeline(getRangeFiltered());
+  }
+
+  function resetZoom() {
+    if (!zoomWindow) return;
+    zoomWindow = null;
+    drawTimeline(getRangeFiltered());
+  }
+
+  // Wire wheel-zoom + double-click-reset onto the three timeline canvases (once).
+  function setupTimelineZoom() {
+    for (const id of ['chartMorning','chartEvening','chartMeds']) {
+      const c = $(id);
+      if (!c) continue;
+      c.addEventListener('wheel', e => applyWheelZoom(c, e), { passive: false });
+      c.addEventListener('dblclick', resetZoom);
+    }
+  }
+
   function renderAll() {
     // Re-classify readings based on the currently selected goal
     const goal = getGoal();
@@ -2880,25 +2958,7 @@
     // Update legend to reflect selected goal
     updateLegend(goal);
 
-    const morning = rs.filter(x=>x.window==='Morning');
-    const ae = rs.filter(x=>x.window==='Afternoon/Evening');
-
-    let xMinMs, xMaxMs;
-    if(rs.length){
-      xMinMs=rs[0].t.getTime()-12*3600000;
-      xMaxMs=rs[rs.length-1].t.getTime()+12*3600000;
-    } else {
-      const now=Date.now();
-      xMinMs=now-30*86400000;xMaxMs=now;
-    }
-
-    drawBPPanel($('chartMorning'), morning, 'Morning BP', xMinMs, xMaxMs, holdEvents, 'Morning');
-    drawBPPanel($('chartEvening'), ae, 'Afternoon/Evening BP', xMinMs, xMaxMs, holdEvents, 'Afternoon/Evening');
-    drawMedPanel($('chartMeds'), medIntervals, xMinMs, xMaxMs);
-
-    attachBPHover($('chartMorning'), morning, xMinMs, xMaxMs);
-    attachBPHover($('chartEvening'), ae, xMinMs, xMaxMs);
-    attachMedHover($('chartMeds'));
+    drawTimeline(rs);
 
     renderKPIs(m, rs);
     renderPhaseTable(rs);
@@ -3016,7 +3076,8 @@
   // EVENT WIRING
   // =============================================
   $('applyMapBtn').addEventListener('click', applyMappingFromUI);
-  $('range').addEventListener('change', renderAll);
+  $('range').addEventListener('change', () => { zoomWindow = null; renderAll(); });
+  setupTimelineZoom();
   // Use 'input' event for number fields so updates happen immediately on every keystroke/spinner click
   $('amStart').addEventListener('input',()=>{processData();renderAll();});
   $('amEnd').addEventListener('input',()=>{processData();renderAll();});

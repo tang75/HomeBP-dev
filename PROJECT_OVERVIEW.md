@@ -119,9 +119,15 @@ clinician version uses a finer 5-level scale ("minimal / modest / meaningful /
 significant / major").
 
 > **Decision (#3 from the review):** Thresholds should ship with **sensible defaults
-> but be adjustable per patient.** Today, only the *goal* is adjustable; the severe,
-> low, and response-tier thresholds are fixed in code. Making those adjustable is on
-> the backlog (§8).
+> but be adjustable per patient.** Implemented for the **goal** and now for **Severe
+> and Low** — the clinician view has a "Severe / Low…" control (button + panel, right
+> after GOAL) with editable SBP/DBP cutoffs and a reset-to-defaults. Changing them
+> flows through everything (bar colors, the legend's parenthetical definitions, the
+> severe/low percentages, the clinical insights, the phase table, and the regimen
+> score) via `reclassifyForGoal(readings, goal, thresholds)` in `bp-core.js`. Persisted
+> in localStorage (`hbp_severeSys/Dia`, `hbp_lowSys/Dia`). The **response-tier** cutoffs
+> (how much improvement counts as "significant" etc.) are still fixed in code — that
+> remains on the backlog. The patient view keeps the fixed defaults (no config there).
 
 ---
 
@@ -259,6 +265,6 @@ site and a production site. Work happens on the `dev` branch.
 |---|-------|--------|
 | 1 | Audience | **General-purpose, for any clinician/patient** (decided) |
 | 2 | Python/PDF generation | Assumed **retired**; confirm |
-| 3 | Clinical thresholds | **Defaults, but make per-patient adjustable** (backlog) |
+| 3 | Clinical thresholds | Goal + **Severe/Low now adjustable** (clinician view); response-tiers still fixed |
 | 4 | Insights engine role | **Both descriptive and advisory** (decided) — advisory items need sign-off |
 | 5 | Immediate next step | This document; then cleanup vs. feature work, owner's call |

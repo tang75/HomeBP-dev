@@ -210,10 +210,19 @@ const BPCore = (() => {
     return { severe, green, red, hypo };
   }
 
-  // Re-tag .green and .red on readings based on a custom goal (e.g. US 130/80 or custom).
-  // Hypo and severe are independent of goal and remain unchanged.
-  function reclassifyForGoal(readings, goal) {
+  // Re-tag every reading from the current goal and (optionally) custom Severe/Low
+  // cutoffs. `thr` = { severeSys, severeDia, lowSys, lowDia }; any field omitted
+  // falls back to the built-in default. Recomputing severe/low here (not just at
+  // build time) lets the clinician adjust those tiers and have the change flow
+  // through colors, counts, insights, and scoring consistently.
+  function reclassifyForGoal(readings, goal, thr) {
+    const sSys = thr && thr.severeSys != null ? thr.severeSys : SEVERE_SBP_MIN;
+    const sDia = thr && thr.severeDia != null ? thr.severeDia : SEVERE_DBP_MIN;
+    const lSys = thr && thr.lowSys != null ? thr.lowSys : HYPO_SBP_MAX;
+    const lDia = thr && thr.lowDia != null ? thr.lowDia : HYPO_DBP_MAX;
     for (const r of readings) {
+      r.hypo = r.sys < lSys || r.dia < lDia;
+      r.severe = r.sys >= sSys || r.dia >= sDia;
       r.green = !r.hypo && r.sys < goal.sys && r.dia < goal.dia && !r.severe;
       r.red = !r.green && !r.severe && !r.hypo;
     }

@@ -8,7 +8,7 @@
   <meta http-equiv="Expires" content="0" />
   <title>Clinician View: Home BP Timeline</title>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-  <script src="bp-core.js?v=8"></script>
+  <script src="bp-core.js?v=9"></script>
   <style>
     :root { --bg:#ffffff; --card:#ffffff; --muted:#5a6a7a; --text:#1a1a2e; --accent:#2c5dcd; --warn:#b87800; --danger:#c62828; --ok:#1b7a3d; --canvas-bg:#ffffff; }
     *{box-sizing:border-box;}
@@ -246,6 +246,18 @@
         <span class="muted small">/</span>
         <input id="goalDia" type="number" value="85" style="width:70px" />
       </div>
+      <button id="thrBtn" title="Set custom Severe and Low thresholds">Severe / Low&hellip;</button>
+      <div class="pill" id="thrPanel" style="display:none">
+        <label style="font-weight:700;">Severe &ge;</label>
+        <input id="severeSys" type="number" min="100" max="260" value="160" style="width:60px" />
+        <span class="muted small">/</span>
+        <input id="severeDia" type="number" min="50" max="160" value="100" style="width:60px" />
+        <label style="font-weight:700; margin-left:10px;">Low &lt;</label>
+        <input id="lowSys" type="number" min="60" max="160" value="100" style="width:60px" />
+        <span class="muted small">/</span>
+        <input id="lowDia" type="number" min="30" max="100" value="60" style="width:60px" />
+        <button id="thrReset" style="margin-left:8px; font-size:11px; padding:4px 10px;">Reset to defaults</button>
+      </div>
       <button id="printBtn">Print / PDF</button>
       <button id="clearBtn" style="display:none;">Clear Data</button>
       <button id="editProfileBtn2" style="display:none; font-size:12px; font-weight:600; color:#1a73e8; background:rgba(26,115,232,.08); border:1px solid rgba(26,115,232,.25); padding:5px 14px; border-radius:8px; cursor:pointer; white-space:nowrap;">Edit Profile</button>
@@ -360,10 +372,10 @@
         <canvas id="chartMeds" height="160"></canvas>
       </div>
       <div class="legend-bar">
-        <div class="legend-item"><span class="legend-swatch" style="background:#7B1FA2"></span> Low: SBP &lt;100 or DBP &lt;60</div>
+        <div class="legend-item"><span class="legend-swatch" style="background:#7B1FA2"></span> <span id="legendLowDef">Low (SBP &lt;100 or DBP &lt;60)</span></div>
         <div class="legend-item"><span class="legend-swatch" style="background:#00C853"></span> Green: SBP &lt;140 AND DBP &lt;90</div>
         <div class="legend-item"><span class="legend-swatch" style="background:#FF4444"></span> Red: SBP 140–159 or DBP 90–99</div>
-        <div class="legend-item"><span style="display:inline-block;width:16px;height:12px;border-radius:3px;vertical-align:middle;"><svg width="16" height="12" xmlns="http://www.w3.org/2000/svg"><rect width="16" height="12" rx="2" fill="#FF0000"/><line x1="0" y1="12" x2="12" y2="0" stroke="rgba(255,255,255,.7)" stroke-width="1.5"/><line x1="4" y1="12" x2="16" y2="0" stroke="rgba(255,255,255,.7)" stroke-width="1.5"/><line x1="8" y1="12" x2="20" y2="0" stroke="rgba(255,255,255,.7)" stroke-width="1.5"/><line x1="-4" y1="12" x2="8" y2="0" stroke="rgba(255,255,255,.7)" stroke-width="1.5"/></svg></span> Severe: SBP &ge;160 or DBP &ge;100</div>
+        <div class="legend-item"><span style="display:inline-block;width:16px;height:12px;border-radius:3px;vertical-align:middle;"><svg width="16" height="12" xmlns="http://www.w3.org/2000/svg"><rect width="16" height="12" rx="2" fill="#FF0000"/><line x1="0" y1="12" x2="12" y2="0" stroke="rgba(255,255,255,.7)" stroke-width="1.5"/><line x1="4" y1="12" x2="16" y2="0" stroke="rgba(255,255,255,.7)" stroke-width="1.5"/><line x1="8" y1="12" x2="20" y2="0" stroke="rgba(255,255,255,.7)" stroke-width="1.5"/><line x1="-4" y1="12" x2="8" y2="0" stroke="rgba(255,255,255,.7)" stroke-width="1.5"/></svg></span> <span id="legendSevereDef">Severe (SBP &ge;160 or DBP &ge;100)</span></div>
         <div class="legend-item"><span style="display:inline-block;width:18px;height:2px;background:#8a8a8a;vertical-align:middle;"></span> Heart Rate</div>
         <div class="legend-item"><span style="display:inline-block;width:18px;height:0;border-top:2px dashed #888;vertical-align:middle;"></span> Targets (SBP &lt;140, DBP &lt;90)</div>
         <div class="legend-item"><span style="font-size:16px;">&#9733;</span> Hold HTN meds</div>
@@ -396,7 +408,7 @@
         <div class="legend-bar" style="margin-bottom:10px;">
           <div class="legend-item"><span class="legend-swatch" style="background:#27ae60;"></span> At goal (SBP &lt; 140 &amp; DBP &lt; 90)</div>
           <div class="legend-item"><span class="legend-swatch" style="background:#e74c3c;"></span> Above goal</div>
-          <div class="legend-item"><span class="legend-swatch" style="background:#900; border:1px solid #700;"></span> Severe (SBP ≥ 160 or DBP ≥ 100)</div>
+          <div class="legend-item"><span class="legend-swatch" style="background:#900; border:1px solid #700;"></span> <span id="legendSevereDef2">Severe (SBP ≥ 160 or DBP ≥ 100)</span></div>
           <div class="legend-item"><span style="font-weight:700; color:#1a73e8; font-size:13px;">Blue bold</span> New/restarted drug</div>
           <div class="legend-item"><span style="font-weight:700; color:#c0392b; font-size:13px;">Red bold</span> Changed dose/frequency</div>
           <div class="legend-item"><span style="font-weight:700; color:var(--accent); font-size:13px;">Δ pp</span> Change in percentage points (not percent)</div>
@@ -552,6 +564,22 @@
   }
   function getGoalConfig() {
     return { profile: $('profile').value, customSys: +$('goalSys').value||135, customDia: +$('goalDia').value||85 };
+  }
+  // Configurable Severe / Low cutoffs, falling back to the built-in defaults.
+  function getThresholdConfig() {
+    return {
+      severeSys: +$('severeSys').value || SEVERE_SBP_MIN,
+      severeDia: +$('severeDia').value || SEVERE_DBP_MIN,
+      lowSys: +$('lowSys').value || HYPO_SBP_MAX,
+      lowDia: +$('lowDia').value || HYPO_DBP_MAX,
+    };
+  }
+  function saveThresholds() {
+    const t = getThresholdConfig();
+    localStorage.setItem('hbp_severeSys', t.severeSys);
+    localStorage.setItem('hbp_severeDia', t.severeDia);
+    localStorage.setItem('hbp_lowSys', t.lowSys);
+    localStorage.setItem('hbp_lowDia', t.lowDia);
   }
   function getAMConfig() {
     return { amStart: +$('amStart').value, amEnd: +$('amEnd').value };
@@ -811,6 +839,9 @@
   // Timeline zoom state (Ctrl/Cmd + wheel; cursor-centered). null = full data extent.
   let zoomWindow = null, fullExtent = null;
   const ZOOM_MIN_SPAN_MS = 12 * 3600000; // don't zoom in tighter than 12h
+  // SBP at/above which the timeline prints the numeric label; tracks the
+  // configurable Severe SBP cutoff (set each render in renderAll).
+  let activeSevereLabelSBP = SEVERE_LABEL_SBP_MIN;
   function setupCanvas(canvas, displayW, displayH) {
     const dpr = printDPR > 0 ? printDPR : Math.max(3, window.devicePixelRatio||1);
     canvas.width = displayW*dpr;
@@ -912,7 +943,7 @@
 
     // Severe SBP labels — stack in white space ABOVE bars only, never overlay BP bars.
     // Fallback: if a label can't be placed, apply 48hr peak-picking on unplaced readings.
-    const sevReadings = rs.filter(r=>r.sys>=SEVERE_LABEL_SBP_MIN).sort((a,b)=>a.t-b.t);
+    const sevReadings = rs.filter(r=>r.sys>=activeSevereLabelSBP).sort((a,b)=>a.t-b.t);
     if(sevReadings.length>0){
       // Collect all bar bounding boxes so labels never overlap any bar
       const barBoxes = rs.map(r => {
@@ -1925,7 +1956,7 @@
     // 1b. Severe readings frequency
     if (sevPct >= 15) {
       insights.push({ category: 'BP Patterns', priority: 1, icon: '🔴',
-        text: `<b>High frequency of severe readings:</b> ${sevPct.toFixed(0)}% of readings are severe (SBP ≥160 or DBP ≥100). Urgent action warranted — severe HTN carries acute risk for hypertensive emergency, hemorrhagic CVA, and acute HF exacerbation.` });
+        text: `<b>High frequency of severe readings:</b> ${sevPct.toFixed(0)}% of readings are severe (SBP ≥${d.thr.severeSys} or DBP ≥${d.thr.severeDia}). Urgent action warranted — severe HTN carries acute risk for hypertensive emergency, hemorrhagic CVA, and acute HF exacerbation.` });
     } else if (sevPct >= 5) {
       insights.push({ category: 'BP Patterns', priority: 2, icon: '🟠',
         text: `<b>Significant severe readings:</b> ${sevPct.toFixed(1)}% of readings in severe range. Even intermittent severe spikes increase vascular shear stress and target-organ risk.` });
@@ -2655,6 +2686,7 @@
       circDiff, circDiffDBP, higherWindow,
       meanHRVal, hrReadings, insightRecentWeeks,
       profile: getPatientProfile(),
+      thr: getThresholdConfig(),
     });
 
     // Disclaimer
@@ -2669,6 +2701,7 @@
   function renderDebugRules() {
     const container = $('debugRulesContainer');
     const goal = getGoal();
+    const thr = getThresholdConfig();
     const N = Math.max(2, +$('phaseN').value || 10);
     const lookbackMonths = Math.max(1, +$('phaseLookback').value || 3);
     const recentWeeks = Math.max(1, +$('phaseRecentWeeks').value || 2);
@@ -2682,9 +2715,9 @@
         title: 'BP Classification Rules',
         rules: [
           `<b>Green (at goal):</b> SBP &lt; ${goal.sys} AND DBP &lt; ${goal.dia}`,
-          `<b>Red (above goal):</b> SBP ${goal.sys}–${SEVERE_SBP_MIN-1} OR DBP ${goal.dia}–${SEVERE_DBP_MIN-1} (and not severe)`,
-          `<b>Severe:</b> SBP ≥ ${SEVERE_SBP_MIN} OR DBP ≥ ${SEVERE_DBP_MIN}`,
-          `<b>Low:</b> SBP < ${HYPO_SBP_MAX} OR DBP < ${HYPO_DBP_MAX}`,
+          `<b>Red (above goal):</b> SBP ${goal.sys}–${thr.severeSys-1} OR DBP ${goal.dia}–${thr.severeDia-1} (and not severe)`,
+          `<b>Severe:</b> SBP ≥ ${thr.severeSys} OR DBP ≥ ${thr.severeDia} <span class="muted">(configurable; default 160/100)</span>`,
+          `<b>Low:</b> SBP < ${thr.lowSys} OR DBP < ${thr.lowDia} <span class="muted">(configurable; default 100/60)</span>`,
           `<b>Goal target:</b> ${goal.sys}/${goal.dia} (current profile: ${$('profile').value})`,
         ]
       },
@@ -2736,7 +2769,7 @@
       {
         title: 'Severe SBP Label Display (Timeline Chart)',
         rules: [
-          `<b>Threshold:</b> Labels shown for all readings with SBP ≥ ${SEVERE_LABEL_SBP_MIN}`,
+          `<b>Threshold:</b> Labels shown for all readings with SBP ≥ ${thr.severeSys} (tracks the Severe SBP cutoff)`,
           `<b>Placement:</b> Labels are placed in white space ABOVE the BP bars only — never overlaying any bar. Collision detection checks against all bar bounding boxes AND previously placed labels`,
           `<b>Fallback for dense clusters:</b> If a label can't be placed (all positions overlap), apply 48hr peak-picking: among unplaced readings, only force-label the highest SBP within each 48hr window`,
         ]
@@ -2788,7 +2821,7 @@
           `<b>Data window (current phase):</b> Most recent ${recentWeeks} week(s) of readings`,
           `<b>Data window (historical phases):</b> Last ${recentWeeks} week(s) of readings that fall within the phase's actual date range. If the phase ended before that window existed (e.g., phase was only a few days long), the stacked distribution uses all in-phase readings as a fallback so every regimen contributes`,
           `<b>Per-window phase rows (AM/PM table):</b> For each phase, uses the last N=${N} readings that fall within that phase's actual start–end range (ignores Lookback setting)`,
-          `<b>Stacked distribution bar:</b> Each row shows a stacked bar with 5 categories: Low (purple, SBP ≤ ${BPCore.HYPO_SBP_MAX}), At Goal (green, SBP < ${goal.sys} and DBP < ${goal.dia}), Near Goal (amber, within 2 mmHg of goal but not at goal), Above Goal (red, above near-goal threshold), Severe (hatched red, SBP ≥ ${BPCore.SEVERE_SBP_MIN} or DBP ≥ ${BPCore.SEVERE_DBP_MIN})`,
+          `<b>Stacked distribution bar:</b> Each row shows a stacked bar with 5 categories: Low (purple, SBP < ${thr.lowSys} or DBP < ${thr.lowDia}), At Goal (green, SBP < ${goal.sys} and DBP < ${goal.dia}), Near Goal (amber, within 2 mmHg of goal but not at goal), Above Goal (red, above near-goal threshold), Severe (hatched red, SBP ≥ ${thr.severeSys} or DBP ≥ ${thr.severeDia})`,
           `<b>Percentage labels:</b> Shown inside segments ≥ 6%. Segments 1–5% show labels below the bar in the segment's color. Segments < 1% are hidden`,
           `<b>Scoring formula:</b> Score = (%at goal) − (%severe) − 5 × (hold count). Higher = better. Uses raw hold count, not extrapolated monthly rate, to avoid disproportionate penalties for short phases`,
           `<b>Ranking:</b> Phases sorted by score descending. #1 = best. Row highlighting: best row has green tint, worst row (if > 2 phases) has red tint`,
@@ -2856,13 +2889,21 @@
   // DYNAMIC LEGEND
   // =============================================
   function updateLegend(goal) {
+    const thr = getThresholdConfig();
     const legendBar = document.querySelector('#tab-timeline .legend-bar');
     if (!legendBar) return;
     const items = legendBar.querySelectorAll('.legend-item');
     // Update Green legend (2nd item, index 1)
     if (items[1]) items[1].innerHTML = `<span class="legend-swatch" style="background:#00C853"></span> Green: SBP &lt;${goal.sys} AND DBP &lt;${goal.dia}`;
     // Update Red legend (3rd item, index 2)
-    if (items[2]) items[2].innerHTML = `<span class="legend-swatch" style="background:#FF4444"></span> Red: SBP ${goal.sys}\u2013${SEVERE_SBP_MIN-1} or DBP ${goal.dia}\u2013${SEVERE_DBP_MIN-1}`;
+    if (items[2]) items[2].innerHTML = `<span class="legend-swatch" style="background:#FF4444"></span> Red: SBP ${goal.sys}\u2013${thr.severeSys-1} or DBP ${goal.dia}\u2013${thr.severeDia-1}`;
+    // Update Low + Severe definitions (parenthetical), reflecting custom cutoffs
+    const lowDef = $('legendLowDef');
+    if (lowDef) lowDef.innerHTML = `Low (SBP &lt;${thr.lowSys} or DBP &lt;${thr.lowDia})`;
+    const sevDef = $('legendSevereDef');
+    if (sevDef) sevDef.innerHTML = `Severe (SBP &ge;${thr.severeSys} or DBP &ge;${thr.severeDia})`;
+    const sevDef2 = $('legendSevereDef2');
+    if (sevDef2) sevDef2.innerHTML = `Severe (SBP &ge; ${thr.severeSys} or DBP &ge; ${thr.severeDia})`;
     // Update Target legend (6th item, index 5)
     if (items[5]) items[5].innerHTML = `<span style="display:inline-block;width:18px;height:0;border-top:2px dashed #888;vertical-align:middle;"></span> Targets (SBP &lt;${goal.sys}, DBP &lt;${goal.dia})`;
 
@@ -2948,9 +2989,11 @@
   }
 
   function renderAll() {
-    // Re-classify readings based on the currently selected goal
+    // Re-classify readings based on the currently selected goal + Severe/Low cutoffs
     const goal = getGoal();
-    reclassifyForGoal(readings, goal);
+    const thr = getThresholdConfig();
+    activeSevereLabelSBP = thr.severeSys;
+    reclassifyForGoal(readings, goal, thr);
 
     const rs = getRangeFiltered();
     const m = computeMetrics(rs);
@@ -3081,6 +3124,28 @@
   // Use 'input' event for number fields so updates happen immediately on every keystroke/spinner click
   $('amStart').addEventListener('input',()=>{processData();renderAll();});
   $('amEnd').addEventListener('input',()=>{processData();renderAll();});
+
+  // Severe / Low threshold control: toggle panel, live-apply, persist, reset.
+  $('thrBtn').addEventListener('click', () => {
+    const p = $('thrPanel');
+    p.style.display = (p.style.display === 'none' || !p.style.display) ? 'inline-flex' : 'none';
+  });
+  for (const id of ['severeSys','severeDia','lowSys','lowDia']) {
+    $(id).addEventListener('input', () => { saveThresholds(); renderAll(); });
+  }
+  $('thrReset').addEventListener('click', () => {
+    $('severeSys').value = SEVERE_SBP_MIN; $('severeDia').value = SEVERE_DBP_MIN;
+    $('lowSys').value = HYPO_SBP_MAX; $('lowDia').value = HYPO_DBP_MAX;
+    saveThresholds(); renderAll();
+  });
+  // Restore saved Severe/Low thresholds
+  (() => {
+    const map = { hbp_severeSys:'severeSys', hbp_severeDia:'severeDia', hbp_lowSys:'lowSys', hbp_lowDia:'lowDia' };
+    for (const [k, id] of Object.entries(map)) {
+      const v = localStorage.getItem(k);
+      if (v != null && v !== '') $(id).value = v;
+    }
+  })();
   function updateGoalHighlight() {
     const prof = $('profile').value;
     const goalPill = $('goalPill');

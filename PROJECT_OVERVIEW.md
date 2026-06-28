@@ -161,11 +161,16 @@ identifies the drug** and whose **shading darkens with higher dose**.
   outside the charts.) When zoomed in, **click-drag** pans the view sideways (cursor
   shows a grab hand), and **double-click** resets to the full range. (Available in both
   the clinician and patient views.)
-- **Medication Response** — two tables:
+- **Medication Response** (first section titled *"History of Response to Medication
+  Regimens (Morning vs Afternoon/Evening)"*) — two tables:
   - a **phase table** showing BP statistics for each medication regimen period; and
   - a **Treatment Plan Comparison** that ranks the regimens (a score rewarding
     at-goal readings and penalizing severe readings and medication holds) and flags
     the best-performing regimen.
+  - *Dose-change reconciliation:* the **current** regimen's statistics use the recent
+    window **clipped to the most recent dose change**, so readings taken on the prior
+    dose are never counted under the new regimen. (Historical phases were already
+    clipped to their own date range.)
 - **Clinical Insights** — a profile-aware narrative. The clinician can fill in a
   **patient profile** (age, sex, race, comorbidities — diabetes, CKD, heart failure,
   CAD, stroke/TIA, afib — plus conditions, intolerances, pregnancy). The engine then

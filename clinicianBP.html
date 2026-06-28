@@ -1482,7 +1482,10 @@
       const subsets = {};
       for (const w of windows) {
         if (isLast) {
-          subsets[w] = getRecentReadings(rs, recentWeeks, w);
+          // Bound the current phase by its start (the most recent med change), so
+          // readings from the prior dose aren't counted under the new regimen.
+          const phaseStart = boundaries[bi].date;
+          subsets[w] = getRecentReadings(rs, recentWeeks, w).filter(r => r.t >= phaseStart);
         } else {
           const phaseStart = boundaries[bi].date;
           const phaseEnd = boundaries[bi + 1].date;
@@ -1656,7 +1659,7 @@
       const phaseDays = Math.max(1, daysBetween(pStart, pEnd));
       const phaseHolds = holdEvents.filter(h => h.getTime() >= pStart.getTime() && h.getTime() < pEnd.getTime());
       const allReadingsPhase = [...(function() {
-        if (bi === boundaries.length - 1) return getRecentReadings(rs, recentWeeks, 'All');
+        if (bi === boundaries.length - 1) return getRecentReadings(rs, recentWeeks, 'All').filter(r => r.t >= boundaries[bi].date);
         // Last `recentWeeks` of the phase, but not earlier than the phase start
         const phaseStartT = boundaries[bi].date;
         const win = BPCore.getRecentReadingsBeforeDate(rs, boundaries[bi + 1].date, recentWeeks, 'All')
@@ -2774,7 +2777,7 @@
         rules: [
           `<b>Readings per phase:</b> ${N} readings OR ${minPhaseDays} days (${minPhaseWeeks} weeks), whichever window is longer, per time-of-day window`,
           `<b>Method for non-last phases:</b> Take the last ${N} readings (or all within ${minPhaseDays} days, whichever is longer) BEFORE the NEXT medication change date, within a ${lookbackMonths}-month lookback window`,
-          `<b>Method for the last (current) phase:</b> Take ALL readings within the most recent ${recentWeeks} week(s) from the data end date`,
+          `<b>Method for the last (current) phase:</b> Take readings within the most recent ${recentWeeks} week(s) from the data end date, but NOT earlier than the current phase's start (the most recent medication change) — so the prior dose's readings are never counted under the new regimen`,
           `<b>Unified date span:</b> For each phase, the Morning and Afternoon/Evening rows share the same date window — the later of the two start dates is used for both`,
           `<b>Phase detection:</b> Change dates = all segment START dates + (segment END date + 1 day) for drugs that stop before data end. At each change date, the label shows the FULL active regimen (all drugs where start ≤ date ≤ end)`,
           `<b>Drug stop detection:</b> When a segment ends before the data end, a boundary is created at end+1 day where the drug is no longer active. Ongoing drugs (segment ends at data end) do not create stop boundaries`,
@@ -2845,7 +2848,7 @@
           `<b>Location:</b> Medication Response tab — requires ≥ 2 regimen phases with ≥ 1 reading each`,
           `<b>Phase detection:</b> A new phase begins when the active medication regimen changes (drug added, removed, or dose changed). Boundaries within 2 days are merged`,
           `<b>Coverage:</b> Every regimen the patient has tried appears in the comparison, regardless of how long ago it was used. The "Lookback (months)" setting does NOT restrict which regimens are included — historical trials are always shown because each one contributes clinical information`,
-          `<b>Data window (current phase):</b> Most recent ${recentWeeks} week(s) of readings`,
+          `<b>Data window (current phase):</b> Most recent ${recentWeeks} week(s) of readings, clipped to start no earlier than the current phase's start (the most recent medication change)`,
           `<b>Data window (historical phases):</b> Last ${recentWeeks} week(s) of readings that fall within the phase's actual date range. If the phase ended before that window existed (e.g., phase was only a few days long), the stacked distribution uses all in-phase readings as a fallback so every regimen contributes`,
           `<b>Per-window phase rows (AM/PM table):</b> For each phase, uses the last N=${N} readings that fall within that phase's actual start–end range (ignores Lookback setting)`,
           `<b>Stacked distribution bar:</b> Each row shows a stacked bar with 5 categories: Low (purple, SBP < ${thr.lowSys} or DBP < ${thr.lowDia}), At Goal (green, SBP < ${goal.sys} and DBP < ${goal.dia}), Near Goal (amber, within 2 mmHg of goal but not at goal), Above Goal (red, above near-goal threshold), Severe (hatched red, SBP ≥ ${thr.severeSys} or DBP ≥ ${thr.severeDia})`,

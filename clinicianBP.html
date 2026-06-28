@@ -1683,6 +1683,7 @@
       const redAdj = allReadingsPhase.length ? 100 * allReadingsPhase.filter(r => r.red && !isNearGoal(r)).length / allReadingsPhase.length : 0;
       phaseGroups.push({
         label: amRow.phase,
+        start: pStart, end: pEnd,
         amSBP: amRow.meanSBP, pmSBP: pmRow.meanSBP,
         amN: amRow.n, pmN: pmRow.n,
         green: allStats.green || 0,
@@ -1778,8 +1779,9 @@
       barHtml += `<span style="font-size:10px; color:var(--muted); white-space:nowrap;">n=${p.n}</span>`;
       barHtml += '</div>';
 
+      const periodRange = (p.start && p.end) ? `${fmtDateShort(p.start)} – ${fmtDateShort(p.end)}` : '';
       compHtml += `<tr style="${rowBg}">`;
-      compHtml += `<td style="text-align:left; max-width:200px; word-break:break-word;">${p.label}</td>`;
+      compHtml += `<td style="text-align:left; max-width:200px; word-break:break-word;">${p.label}${periodRange ? `<div style="font-size:10px; color:var(--muted); font-weight:400; margin-top:2px;">${periodRange}</div>` : ''}</td>`;
       compHtml += `<td style="padding:4px 6px;">${barHtml}</td>`;
       compHtml += `<td style="${holdStyle}">${p.holdCount}</td>`;
       compHtml += `<td>${p.score.toFixed(1)}</td>`;

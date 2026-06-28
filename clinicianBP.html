@@ -1779,7 +1779,11 @@
       barHtml += `<span style="font-size:10px; color:var(--muted); white-space:nowrap;">n=${p.n}</span>`;
       barHtml += '</div>';
 
-      const periodRange = (p.start && p.end) ? `${fmtDateShort(p.start)} – ${fmtDateShort(p.end)}` : '';
+      const periodRange = (p.start && p.end)
+        ? (p.start.getFullYear() === p.end.getFullYear()
+            ? `${fmtDateShort(p.start)} – ${fmtDateShort(p.end)}, ${p.end.getFullYear()}`
+            : `${fmtDateShort(p.start)}, ${p.start.getFullYear()} – ${fmtDateShort(p.end)}, ${p.end.getFullYear()}`)
+        : '';
       compHtml += `<tr style="${rowBg}">`;
       compHtml += `<td style="text-align:left; max-width:200px; word-break:break-word;">${p.label}${periodRange ? `<div style="font-size:10px; color:var(--muted); font-weight:400; margin-top:2px;">${periodRange}</div>` : ''}</td>`;
       compHtml += `<td style="padding:4px 6px;">${barHtml}</td>`;

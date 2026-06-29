@@ -247,14 +247,14 @@
         <input id="goalDia" type="number" value="85" style="width:70px" />
       </div>
       <div class="pill" id="severePill">
-        <label style="font-weight:700;">SEVERE</label>
+        <label style="font-weight:700;">VERY HIGH</label>
         <select id="severeProfile">
           <option value="standard" selected>Default (&ge;160/100)</option>
           <option value="custom">Custom</option>
         </select>
       </div>
       <div class="pill" id="customSeverePill" style="display:none">
-        <label style="font-weight:700;">Severe &ge;</label>
+        <label style="font-weight:700;">Very High &ge;</label>
         <input id="severeSys" type="number" min="100" max="260" value="160" style="width:64px" />
         <span class="muted small">/</span>
         <input id="severeDia" type="number" min="50" max="160" value="100" style="width:64px" />
@@ -389,7 +389,7 @@
         <div class="legend-item"><span class="legend-swatch" style="background:#7B1FA2"></span> <span id="legendLowDef">Low (SBP &lt;100 or DBP &lt;60)</span></div>
         <div class="legend-item"><span class="legend-swatch" style="background:#00C853"></span> Green: SBP &lt;140 AND DBP &lt;90</div>
         <div class="legend-item"><span class="legend-swatch" style="background:#FF4444"></span> Red: SBP 140–159 or DBP 90–99</div>
-        <div class="legend-item"><span style="display:inline-block;width:16px;height:12px;border-radius:3px;vertical-align:middle;"><svg width="16" height="12" xmlns="http://www.w3.org/2000/svg"><rect width="16" height="12" rx="2" fill="#FF0000"/><line x1="0" y1="12" x2="12" y2="0" stroke="rgba(255,255,255,.7)" stroke-width="1.5"/><line x1="4" y1="12" x2="16" y2="0" stroke="rgba(255,255,255,.7)" stroke-width="1.5"/><line x1="8" y1="12" x2="20" y2="0" stroke="rgba(255,255,255,.7)" stroke-width="1.5"/><line x1="-4" y1="12" x2="8" y2="0" stroke="rgba(255,255,255,.7)" stroke-width="1.5"/></svg></span> <span id="legendSevereDef">Severe (SBP &ge;160 or DBP &ge;100)</span></div>
+        <div class="legend-item"><span style="display:inline-block;width:16px;height:12px;border-radius:3px;vertical-align:middle;"><svg width="16" height="12" xmlns="http://www.w3.org/2000/svg"><rect width="16" height="12" rx="2" fill="#FF0000"/><line x1="0" y1="12" x2="12" y2="0" stroke="rgba(255,255,255,.7)" stroke-width="1.5"/><line x1="4" y1="12" x2="16" y2="0" stroke="rgba(255,255,255,.7)" stroke-width="1.5"/><line x1="8" y1="12" x2="20" y2="0" stroke="rgba(255,255,255,.7)" stroke-width="1.5"/><line x1="-4" y1="12" x2="8" y2="0" stroke="rgba(255,255,255,.7)" stroke-width="1.5"/></svg></span> <span id="legendSevereDef">Very High (SBP &ge;160 or DBP &ge;100)</span></div>
         <div class="legend-item"><span style="display:inline-block;width:18px;height:2px;background:#8a8a8a;vertical-align:middle;"></span> Heart Rate</div>
         <div class="legend-item"><span style="display:inline-block;width:18px;height:0;border-top:2px dashed #888;vertical-align:middle;"></span> Targets (SBP &lt;140, DBP &lt;90)</div>
         <div class="legend-item"><span style="font-size:16px;">&#9733;</span> Hold HTN meds</div>
@@ -429,7 +429,7 @@
         <div class="legend-bar" style="margin-bottom:10px;">
           <div class="legend-item"><span class="legend-swatch" style="background:#27ae60;"></span> At goal (SBP &lt; 140 &amp; DBP &lt; 90)</div>
           <div class="legend-item"><span class="legend-swatch" style="background:#e74c3c;"></span> Above goal</div>
-          <div class="legend-item"><span class="legend-swatch" style="background:#900; border:1px solid #700;"></span> <span id="legendSevereDef2">Severe (SBP ≥ 160 or DBP ≥ 100)</span></div>
+          <div class="legend-item"><span class="legend-swatch" style="background:#900; border:1px solid #700;"></span> <span id="legendSevereDef2">Very High (SBP ≥ 160 or DBP ≥ 100)</span></div>
           <div class="legend-item"><span style="font-weight:700; color:#1a73e8; font-size:13px;">Blue bold</span> New/restarted drug</div>
           <div class="legend-item"><span style="font-weight:700; color:#c0392b; font-size:13px;">Red bold</span> Changed dose/frequency</div>
           <div class="legend-item"><span style="font-weight:700; color:var(--accent); font-size:13px;">Δ pp</span> Change in percentage points (not percent)</div>
@@ -1257,7 +1257,7 @@
       if(!best){tip.style.display='none';return;}
       let cls;
       if (best.hypo) cls = '<span style="color:#7B1FA2"><b>LOW</b></span>';
-      else if (best.severe) cls = '<span style="color:#c62828"><b>SEVERE</b></span>';
+      else if (best.severe) cls = '<span style="color:#c62828"><b>VERY HIGH</b></span>';
       else if (best.green) cls = '<span style="color:#1b7a3d">Green</span>';
       else cls = '<span style="color:#b87800">Red</span>';
       const cleanNotes = (best.notes||'').replace(/[;\-\u2014\u2013\s]+/g,' ').trim();
@@ -1359,7 +1359,7 @@
 
     $('avgAllLabel').textContent = `Recent ${recentWeeks}-week avg${labelSuffix}`;
     $('avgAll').textContent = fmtBP(rm.avgSys, rm.avgDia);
-    $('avgAllDetail').innerHTML = `n=${rm.count} &bull; <span class="ok"><b>At Goal (&lt;${goal.sys}/${goal.dia})</b> ${fmtPct(rm.pctGreen)}</span> &bull; <span style="color:#d32f2f"><b>Above Goal</b> ${fmtPct(rm.pctRed)}</span> &bull; <span style="color:#c62828"><b>Severe ${fmtPct(rm.pctSevere)}</b></span>${rm.pctHypo > 0 ? ' &bull; <span style="color:#7B1FA2"><b>Low</b> ' + fmtPct(rm.pctHypo) + '</span>' : ''}`;
+    $('avgAllDetail').innerHTML = `n=${rm.count} &bull; <span class="ok"><b>At Goal (&lt;${goal.sys}/${goal.dia})</b> ${fmtPct(rm.pctGreen)}</span> &bull; <span style="color:#d32f2f"><b>Above Goal</b> ${fmtPct(rm.pctRed)}</span> &bull; <span style="color:#c62828"><b>Very High ${fmtPct(rm.pctSevere)}</b></span>${rm.pctHypo > 0 ? ' &bull; <span style="color:#7B1FA2"><b>Low</b> ' + fmtPct(rm.pctHypo) + '</span>' : ''}`;
 
     // Split-status bar: AM (left) | PM (right), colored by status
     const amReadings = rec.filter(x => x.window === 'Morning');
@@ -1569,7 +1569,7 @@
     let html = '<table class="phase-table"><thead><tr>';
     html += '<th>Phase</th><th>Statistics Window</th><th>Time of Day</th>';
     html += '<th>Mean SBP</th><th>&Delta; SBP</th><th>Mean DBP</th><th>&Delta; DBP</th>';
-    html += '<th>% Green</th><th>&Delta; Grn pp</th><th>% Red</th><th>&Delta; Red pp</th><th>% Severe</th><th>&Delta; Sev pp</th><th># Holds</th><th>N</th>';
+    html += '<th>% Green</th><th>&Delta; Grn pp</th><th>% Red</th><th>&Delta; Red pp</th><th>% Very High</th><th>&Delta; V.High pp</th><th># Holds</th><th>N</th>';
     html += '</tr></thead><tbody>';
 
     for (let i = 0; i < tableRows.length; i++) {
@@ -1718,7 +1718,7 @@
     compHtml += `<span><span style="display:inline-block;width:10px;height:10px;background:#00C853;border-radius:2px;vertical-align:middle;margin-right:3px;"></span>At goal</span>`;
     compHtml += `<span><span style="display:inline-block;width:10px;height:10px;background:#F9A825;border-radius:2px;vertical-align:middle;margin-right:3px;"></span>Near goal</span>`;
     compHtml += `<span><span style="display:inline-block;width:10px;height:10px;background:#FF4444;border-radius:2px;vertical-align:middle;margin-right:3px;"></span>Above goal</span>`;
-    compHtml += `<span><span class="hatched-severe" style="display:inline-block;width:10px;height:10px;border-radius:2px;vertical-align:middle;margin-right:3px;"></span>Severe</span>`;
+    compHtml += `<span><span class="hatched-severe" style="display:inline-block;width:10px;height:10px;border-radius:2px;vertical-align:middle;margin-right:3px;"></span>Very High</span>`;
     compHtml += `</div>`;
 
     compHtml += '<table class="phase-table" style="font-size:12px;"><thead><tr>';
@@ -1796,7 +1796,7 @@
 
     // Methodology
     compHtml += '<div class="muted" style="font-size:10px; margin-top:6px; line-height:1.4;">';
-    compHtml += 'Score = <span style="color:#1b7a3d;">(%at goal)</span> &minus; <span style="color:#c62828;">(%severe)</span> &minus; <span style="color:#c62828;">5&times;(holds)</span>. Higher = better.';
+    compHtml += 'Score = <span style="color:#1b7a3d;">(%at goal)</span> &minus; <span style="color:#c62828;">(%very high)</span> &minus; <span style="color:#c62828;">5&times;(holds)</span>. Higher = better.';
     compHtml += '</div>';
 
     // Best-is-not-current warning
@@ -1998,10 +1998,10 @@
     // 1b. Severe readings frequency
     if (sevPct >= 15) {
       insights.push({ category: 'BP Patterns', priority: 1, icon: '🔴',
-        text: `<b>High frequency of severe readings:</b> ${sevPct.toFixed(0)}% of readings are severe (SBP ≥${d.thr.severeSys} or DBP ≥${d.thr.severeDia}). Urgent action warranted — severe HTN carries acute risk for hypertensive emergency, hemorrhagic CVA, and acute HF exacerbation.` });
+        text: `<b>High frequency of very high readings:</b> ${sevPct.toFixed(0)}% of readings are very high (SBP ≥${d.thr.severeSys} or DBP ≥${d.thr.severeDia}). Urgent action warranted — sustained very high BP carries acute risk for hypertensive emergency, hemorrhagic CVA, and acute HF exacerbation.` });
     } else if (sevPct >= 5) {
       insights.push({ category: 'BP Patterns', priority: 2, icon: '🟠',
-        text: `<b>Significant severe readings:</b> ${sevPct.toFixed(1)}% of readings in severe range. Even intermittent severe spikes increase vascular shear stress and target-organ risk.` });
+        text: `<b>Significant very high readings:</b> ${sevPct.toFixed(1)}% of readings in the very high range. Even intermittent very high spikes increase vascular shear stress and target-organ risk.` });
     }
 
     // 1c. Circadian pattern analysis
@@ -2039,7 +2039,7 @@
     // 1e. Morning-specific severity
     if (d.mornSevPct != null && d.mornSevPct >= 15 && (d.aeSevPct == null || d.mornSevPct > d.aeSevPct + 10)) {
       insights.push({ category: 'BP Patterns', priority: 2, icon: '🌅',
-        text: `<b>Morning severe spike pattern:</b> ${d.mornSevPct.toFixed(0)}% of morning readings are severe vs ${(d.aeSevPct||0).toFixed(0)}% afternoon/evening. Morning BP surge is an independent CVA risk factor.${cite('Kario')} Consider bedtime dosing of long-acting ARB or CCB.` });
+        text: `<b>Morning very high spike pattern:</b> ${d.mornSevPct.toFixed(0)}% of morning readings are very high vs ${(d.aeSevPct||0).toFixed(0)}% afternoon/evening. Morning BP surge is an independent CVA risk factor.${cite('Kario')} Consider bedtime dosing of long-acting ARB or CCB.` });
     }
 
     // 1f. Isolated systolic hypertension
@@ -2099,7 +2099,7 @@
 
       if (Math.abs(dSBP) >= 3 || Math.abs(dGreen) >= 5) {
         const greenDir = dGreen > 5 ? `+${dGreen.toFixed(0)}pp at-goal` : dGreen < -5 ? `${dGreen.toFixed(0)}pp at-goal` : '';
-        const sevDir = dSev > 3 ? `, but +${dSev.toFixed(0)}pp severe` : dSev < -3 ? `, and ${dSev.toFixed(0)}pp severe` : '';
+        const sevDir = dSev > 3 ? `, but +${dSev.toFixed(0)}pp very high` : dSev < -3 ? `, and ${dSev.toFixed(0)}pp very high` : '';
 
         if (dSBP < -3) {
           insights.push({ category: 'Med Correlations', priority: 2, icon: '💊',
@@ -2110,7 +2110,7 @@
         }
         if (dGreen > 5 && dSev > 3) {
           insights.push({ category: 'Med Correlations', priority: 2, icon: '⚠️',
-            text: `<b>Tier-shifting detected:</b> At-goal improved +${dGreen.toFixed(0)}pp but severe also rose +${dSev.toFixed(0)}pp. Net clinical benefit is uncertain — readings may be shifting between severity categories.` });
+            text: `<b>Tier-shifting detected:</b> At-goal improved +${dGreen.toFixed(0)}pp but very high also rose +${dSev.toFixed(0)}pp. Net clinical benefit is uncertain — readings may be shifting between categories.` });
         }
       }
 
@@ -2412,7 +2412,7 @@
       if (d.validPhases.length >= 2) {
         const lastPhase = d.validPhases[d.validPhases.length - 1];
         if (lastPhase.all.green < 30 && lastPhase.all.severe > 10) {
-          treatments.push({ text: `<b>Consider switching drug class</b>`, rationale: `Current regimen yields only ${lastPhase.all.green.toFixed(0)}% at-goal with ${lastPhase.all.severe.toFixed(0)}% severe. Poor response after adequate trial suggests pharmacogenomic or physiologic mismatch. Switch to a different mechanism.`, confidence: 'Moderate', confRationale: 'clinical judgment, patient response data', preferred: false });
+          treatments.push({ text: `<b>Consider switching drug class</b>`, rationale: `Current regimen yields only ${lastPhase.all.green.toFixed(0)}% at-goal with ${lastPhase.all.severe.toFixed(0)}% very high. Poor response after adequate trial suggests pharmacogenomic or physiologic mismatch. Switch to a different mechanism.`, confidence: 'Moderate', confRationale: 'clinical judgment, patient response data', preferred: false });
         }
       }
     }
@@ -2669,7 +2669,7 @@
       html += `<span><span style="display:inline-block;width:10px;height:10px;background:#00C853;border-radius:2px;vertical-align:middle;margin-right:3px;"></span>At goal</span>`;
       html += `<span><span style="display:inline-block;width:10px;height:10px;background:#F9A825;border-radius:2px;vertical-align:middle;margin-right:3px;"></span>Near goal</span>`;
       html += `<span><span style="display:inline-block;width:10px;height:10px;background:#FF4444;border-radius:2px;vertical-align:middle;margin-right:3px;"></span>Above goal</span>`;
-      html += `<span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;vertical-align:middle;margin-right:3px;"><svg width="10" height="10" xmlns="http://www.w3.org/2000/svg"><rect width="10" height="10" rx="2" fill="#FF0000"/><line x1="0" y1="10" x2="10" y2="0" stroke="rgba(255,255,255,.7)" stroke-width="1.5"/><line x1="3" y1="10" x2="13" y2="0" stroke="rgba(255,255,255,.7)" stroke-width="1.5"/><line x1="-3" y1="10" x2="7" y2="0" stroke="rgba(255,255,255,.7)" stroke-width="1.5"/></svg></span>Severe</span>`;
+      html += `<span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;vertical-align:middle;margin-right:3px;"><svg width="10" height="10" xmlns="http://www.w3.org/2000/svg"><rect width="10" height="10" rx="2" fill="#FF0000"/><line x1="0" y1="10" x2="10" y2="0" stroke="rgba(255,255,255,.7)" stroke-width="1.5"/><line x1="3" y1="10" x2="13" y2="0" stroke="rgba(255,255,255,.7)" stroke-width="1.5"/><line x1="-3" y1="10" x2="7" y2="0" stroke="rgba(255,255,255,.7)" stroke-width="1.5"/></svg></span>Very High</span>`;
       html += `</div>`;
 
       // Header row
@@ -2757,8 +2757,8 @@
         title: 'BP Classification Rules',
         rules: [
           `<b>Green (at goal):</b> SBP &lt; ${goal.sys} AND DBP &lt; ${goal.dia}`,
-          `<b>Red (above goal):</b> SBP ${goal.sys}–${thr.severeSys-1} OR DBP ${goal.dia}–${thr.severeDia-1} (and not severe)`,
-          `<b>Severe:</b> SBP ≥ ${thr.severeSys} OR DBP ≥ ${thr.severeDia} <span class="muted">(configurable; default 160/100)</span>`,
+          `<b>Red (above goal):</b> SBP ${goal.sys}–${thr.severeSys-1} OR DBP ${goal.dia}–${thr.severeDia-1} (and not very high)`,
+          `<b>Very High:</b> SBP ≥ ${thr.severeSys} OR DBP ≥ ${thr.severeDia} <span class="muted">(configurable; default 160/100)</span>`,
           `<b>Low:</b> SBP < ${thr.lowSys} OR DBP < ${thr.lowDia} <span class="muted">(configurable; default 100/60)</span>`,
           `<b>Goal target:</b> ${goal.sys}/${goal.dia} (current profile: ${$('profile').value})`,
         ]
@@ -2809,9 +2809,9 @@
         ]
       },
       {
-        title: 'Severe SBP Label Display (Timeline Chart)',
+        title: 'Very High SBP Label Display (Timeline Chart)',
         rules: [
-          `<b>Threshold:</b> Labels shown for all readings with SBP ≥ ${thr.severeSys} (tracks the Severe SBP cutoff)`,
+          `<b>Threshold:</b> Labels shown for all readings with SBP ≥ ${thr.severeSys} (tracks the Very High SBP cutoff)`,
           `<b>Placement:</b> Labels are placed in white space ABOVE the BP bars only — never overlaying any bar. Collision detection checks against all bar bounding boxes AND previously placed labels`,
           `<b>Fallback for dense clusters:</b> If a label can't be placed (all positions overlap), apply 48hr peak-picking: among unplaced readings, only force-label the highest SBP within each 48hr window`,
         ]
@@ -2832,7 +2832,7 @@
         rules: [
           `<b>Minimum data:</b> ≥ 5 readings in each window (AM and PM) required`,
           `<b>Clinically meaningful split:</b> ≥ 8 mmHg SBP difference between AM and PM means`,
-          `<b>Severe burden comparison:</b> Reported when one window exceeds the other by > 3 pp in severe readings AND the higher window has > 8% severe`,
+          `<b>Very High burden comparison:</b> Reported when one window exceeds the other by > 3 pp in very high readings AND the higher window has > 8% very high`,
           `<b>Circadian suggestion:</b> If split ≥ 8 mmHg and not at goal, suggests dose timing adjustment for the dominant uncontrolled window`,
         ]
       },
@@ -2841,7 +2841,7 @@
         rules: [
           `<b>Layout:</b> Visual card dashboard — 2 cards`,
           `<b>Card 1 (Current Status):</b> Always shown (full width). Color-coded badge: green = AT TARGET (mean SBP < ${goal.sys} AND DBP < ${goal.dia}), amber = NEAR TARGET (within 2 mmHg: SBP < ${goal.sys+2} AND DBP < ${goal.dia+2}), red = ABOVE TARGET. Shows current mean BP and active regimen`,
-          `<b>Card 2 (Circadian Pattern):</b> Full width. Shown if AM ≥ 5 AND PM ≥ 5 readings. Proportion bars (green/red/severe) with labeled mini-legend and hatched severe icon, Mean BP column, HR by window (if ≥ 3 readings per window), circadian delta annotation`,
+          `<b>Card 2 (Circadian Pattern):</b> Full width. Shown if AM ≥ 5 AND PM ≥ 5 readings. Proportion bars (green/red/very high) with labeled mini-legend and hatched very-high icon, Mean BP column, HR by window (if ≥ 3 readings per window), circadian delta annotation`,
           `<b>Phase data:</b> ${N} readings per phase, ${lookbackMonths}-month lookback, most recent ${recentWeeks} week(s). Minimum n ≥ 3 for a phase to be validated`,
         ]
       },
@@ -2850,7 +2850,7 @@
         rules: [
           `<b>At goal:</b> Mean SBP < ${goal.sys} AND mean DBP < ${goal.dia}`,
           `<b>Near goal:</b> Mean SBP < ${goal.sys+5} AND mean DBP < ${goal.dia+5}`,
-          `<b>Low severe burden:</b> < 5% severe readings in most recent phase`,
+          `<b>Low very-high burden:</b> < 5% very high readings in most recent phase`,
           `<b>Treatment plan comparison:</b> See dedicated "Treatment Plan Comparison" section below`,
         ]
       },
@@ -2863,9 +2863,9 @@
           `<b>Data window (current phase):</b> Most recent ${recentWeeks} week(s) of readings, clipped to start no earlier than the current phase's start (the most recent medication change)`,
           `<b>Data window (historical phases):</b> Last ${recentWeeks} week(s) of readings that fall within the phase's actual date range. If the phase ended before that window existed (e.g., phase was only a few days long), the stacked distribution uses all in-phase readings as a fallback so every regimen contributes`,
           `<b>Per-window phase rows (AM/PM table):</b> For each phase, uses the last N=${N} readings that fall within that phase's actual start–end range (ignores Lookback setting)`,
-          `<b>Stacked distribution bar:</b> Each row shows a stacked bar with 5 categories: Low (purple, SBP < ${thr.lowSys} or DBP < ${thr.lowDia}), At Goal (green, SBP < ${goal.sys} and DBP < ${goal.dia}), Near Goal (amber, within 2 mmHg of goal but not at goal), Above Goal (red, above near-goal threshold), Severe (hatched red, SBP ≥ ${thr.severeSys} or DBP ≥ ${thr.severeDia})`,
+          `<b>Stacked distribution bar:</b> Each row shows a stacked bar with 5 categories: Low (purple, SBP < ${thr.lowSys} or DBP < ${thr.lowDia}), At Goal (green, SBP < ${goal.sys} and DBP < ${goal.dia}), Near Goal (amber, within 2 mmHg of goal but not at goal), Above Goal (red, above near-goal threshold), Very High (hatched red, SBP ≥ ${thr.severeSys} or DBP ≥ ${thr.severeDia})`,
           `<b>Percentage labels:</b> Shown inside segments ≥ 6%. Segments 1–5% show labels below the bar in the segment's color. Segments < 1% are hidden`,
-          `<b>Scoring formula:</b> Score = (%at goal) − (%severe) − 5 × (hold count). Higher = better. Uses raw hold count, not extrapolated monthly rate, to avoid disproportionate penalties for short phases`,
+          `<b>Scoring formula:</b> Score = (%at goal) − (%very high) − 5 × (hold count). Higher = better. Uses raw hold count, not extrapolated monthly rate, to avoid disproportionate penalties for short phases`,
           `<b>Ranking:</b> Phases sorted by score descending. #1 = best. Row highlighting: best row has green tint, worst row (if > 2 phases) has red tint`,
           `<b>Trophy icon:</b> Shown only for a dominant winner: ≥ 50% at goal AND score gap ≥ 20 over #2`,
           `<b>Holds column:</b> Count of "hold med" events within the phase. Highest hold count is highlighted in red bold`,
@@ -2880,7 +2880,7 @@
         rules: [
           `<b>Screen DPR:</b> max(3, window.devicePixelRatio) — minimum 3× for crispness`,
           `<b>Print DPR:</b> 6× (set via beforeprint/afterprint handlers)`,
-          `<b>Bar widths:</b> normal = ${BASE_BAR_W} days, severe = ${SEVERE_BAR_W} days`,
+          `<b>Bar widths:</b> normal = ${BASE_BAR_W} days, very high = ${SEVERE_BAR_W} days`,
           `<b>Chart padding:</b> left=${PAD.l}px, right=${PAD.r}px, top=${PAD.t}px, bottom=${PAD.b}px`,
         ]
       },
@@ -2888,7 +2888,7 @@
         title: 'KPI Dashboard',
         rules: [
           `<b>Recent window:</b> last ${recentWeeks} week(s) from the end of the selected date range (configurable, shared with current phase)`,
-          `<b>Color coding:</b> SBP/DBP values color-coded by classification (green/red/severe/low)`,
+          `<b>Color coding:</b> SBP/DBP values color-coded by classification (green/red/very high/low)`,
           `<b>Window status colors:</b> Green = At Goal (mean < ${goal.sys}/${goal.dia}), Amber = Near Goal (within 2 mmHg: mean < ${goal.sys+2}/${goal.dia+2}), Red = Above Goal. This applies to dashboard KPI boxes and Clinical Insights badge only — not to individual BP reading bars on the chart`,
         ]
       },
@@ -2939,13 +2939,13 @@
     if (items[1]) items[1].innerHTML = `<span class="legend-swatch" style="background:#00C853"></span> Green: SBP &lt;${goal.sys} AND DBP &lt;${goal.dia}`;
     // Update Red legend (3rd item, index 2)
     if (items[2]) items[2].innerHTML = `<span class="legend-swatch" style="background:#FF4444"></span> Red: SBP ${goal.sys}\u2013${thr.severeSys-1} or DBP ${goal.dia}\u2013${thr.severeDia-1}`;
-    // Update Low + Severe definitions (parenthetical), reflecting custom cutoffs
+    // Update Low + Very High definitions (parenthetical), reflecting custom cutoffs
     const lowDef = $('legendLowDef');
     if (lowDef) lowDef.innerHTML = `Low (SBP &lt;${thr.lowSys} or DBP &lt;${thr.lowDia})`;
     const sevDef = $('legendSevereDef');
-    if (sevDef) sevDef.innerHTML = `Severe (SBP &ge;${thr.severeSys} or DBP &ge;${thr.severeDia})`;
+    if (sevDef) sevDef.innerHTML = `Very High (SBP &ge;${thr.severeSys} or DBP &ge;${thr.severeDia})`;
     const sevDef2 = $('legendSevereDef2');
-    if (sevDef2) sevDef2.innerHTML = `Severe (SBP &ge; ${thr.severeSys} or DBP &ge; ${thr.severeDia})`;
+    if (sevDef2) sevDef2.innerHTML = `Very High (SBP &ge; ${thr.severeSys} or DBP &ge; ${thr.severeDia})`;
     // Update Target legend (6th item, index 5)
     if (items[5]) items[5].innerHTML = `<span style="display:inline-block;width:18px;height:0;border-top:2px dashed #888;vertical-align:middle;"></span> Targets (SBP &lt;${goal.sys}, DBP &lt;${goal.dia})`;
 

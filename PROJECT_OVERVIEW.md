@@ -94,7 +94,10 @@ All defined in [`bp-core.js`](bp-core.js) near the top.
 ### Reading classification
 Each reading is sorted into one of four mutually-relevant categories:
 
-- **Severe** — SBP ≥ 160 **or** DBP ≥ 100. (`SEVERE_SBP_MIN`, `SEVERE_DBP_MIN`)
+- **Very High** — SBP ≥ 160 **or** DBP ≥ 100. (`SEVERE_SBP_MIN`, `SEVERE_DBP_MIN`)
+  *Displayed as "Very High" — renamed from "Severe" so it isn't confused with the
+  guideline 180/120 "severe/crisis" definition. The internal code identifiers
+  (`r.severe`, `pctSevere`, `SEVERE_SBP_MIN`, etc.) keep the `severe` name.*
 - **Low (hypotensive)** — SBP < 100 **or** DBP < 60. (`HYPO_SBP_MAX`, `HYPO_DBP_MAX`)
 - **At goal (green)** — below the *selected goal* (see below), and not severe/low.
 - **Above goal (red)** — everything else (not green, not severe, not low).

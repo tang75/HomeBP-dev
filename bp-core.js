@@ -361,6 +361,51 @@ const BPCore = (() => {
     return fixed.charAt(0).toUpperCase() + fixed.slice(1);
   }
 
+  // True if strings a and b differ by at most one edit (single substitution,
+  // insertion, or deletion). Used to fold single-character drug-name typos.
+  function withinOneEdit(a, b) {
+    if (a === b) return true;
+    const la = a.length, lb = b.length;
+    if (Math.abs(la - lb) > 1) return false;
+    let i = 0;
+    while (i < la && i < lb && a[i] === b[i]) i++;
+    if (la === lb) { // substitution: the rest after one char must match
+      let j = i + 1;
+      while (j < la && a[j] === b[j]) j++;
+      return j === la;
+    }
+    // insertion/deletion: drop the extra char from the longer string
+    const longer = la > lb ? a : b, shorter = la > lb ? b : a;
+    return longer.slice(i + 1) === shorter.slice(i);
+  }
+
+  // Within one patient's parsed events, fold drug names that differ by a single
+  // typo into the more frequently used spelling (e.g. "Irbesarten" -> "Irbesartan").
+  // Without this, a misspelling spawns a phantom second drug that never
+  // reconciles with the correctly-spelled one (both doses appear active at once).
+  function canonicalizeDrugNames(events) {
+    const counts = {};
+    for (const e of events) counts[e.drug] = (counts[e.drug] || 0) + 1;
+    const names = Object.keys(counts);
+    if (names.length < 2) return;
+    const rep = {};
+    for (const name of names) {
+      let best = name;
+      for (const other of names) {
+        if (other === name) continue;
+        if (!withinOneEdit(name.toLowerCase(), other.toLowerCase())) continue;
+        // Representative = highest count, then longer, then lexicographically first.
+        if (counts[other] > counts[best] ||
+            (counts[other] === counts[best] && other.length > best.length) ||
+            (counts[other] === counts[best] && other.length === best.length && other < best)) {
+          best = other;
+        }
+      }
+      rep[name] = best;
+    }
+    for (const e of events) e.drug = rep[e.drug] || e.drug;
+  }
+
   function canonFreq(freq) {
     if (!freq) return null;
     let f = freq.trim().toLowerCase().replace(/\./g,'').replace(/\s+/g,' ');
@@ -429,6 +474,7 @@ const BPCore = (() => {
         }
       }
     }
+    canonicalizeDrugNames(events); // fold single-character drug-name typos before building intervals
     events.sort((a,b) => a.dt - b.dt);
 
     const seen = new Set();

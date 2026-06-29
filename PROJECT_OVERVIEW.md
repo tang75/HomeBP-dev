@@ -142,8 +142,16 @@ which drug, what daily dose, from when to when.
 
 It handles: start / stop / increase / decrease / titrate language; dose-frequency
 abbreviations (qd, bid, tid, qid, qhs); converting "80 mg bid" into a 160 mg/day total;
-and a few common typos. Each medication is then drawn as a horizontal bar whose **color
+and drug-name typos. Each medication is then drawn as a horizontal bar whose **color
 identifies the drug** and whose **shading darkens with higher dose**.
+
+> **Typo reconciliation (important):** a single-character misspelling of a drug name
+> (e.g. "irbesart**e**n" vs "irbesart**a**n") would otherwise create a *phantom second
+> drug* that never reconciles with the correctly-spelled one — so both the old and new
+> dose appear active at the same time (a row reading "Irbesartan 225 + Irbesarten 150").
+> The engine now folds drug names that differ by at most one edit (within a patient's
+> own notes) into the more frequently used spelling, so a typo can't split one drug
+> into two. See `canonicalizeDrugNames` / `withinOneEdit` in `bp-core.js`.
 
 > **Generalization concern:** A couple of spots assume specific drugs/doses (see §8).
 > Because the tool is now general-purpose, these need to come out.

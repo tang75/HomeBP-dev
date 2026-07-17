@@ -146,12 +146,14 @@ which drug, what daily dose, from when to when.
 It handles: start / stop / increase / decrease / titrate language; dose-frequency
 abbreviations (qd, bid, tid, qid, qhs); converting "80 mg bid" into a 160 mg/day total;
 and drug-name typos. Each medication is then drawn as a horizontal bar whose **color
-identifies the drug** and whose **shading darkens with higher dose**. Every **dose
-change** is marked with a divider tick on the bar and a **dose label**; when a segment
-is too narrow to hold the label inline (a short or very recent regimen), the dose is
-shown as a **callout above the bar**. This matters because the shading alone can't show
-a dose *decrease* below the starting dose (both render at the lightest shade), so the
-divider + label is what makes a decrease like 150→75 mg visible.
+identifies the drug** and whose **shading encodes dose intensity**: the shade is
+anchored to each drug's **lowest observed dose** for this patient (lightest) and darkens
+across a **4-fold dose range** (e.g. 75→150→225→300 mg → light→dark). Because it's
+anchored to the lowest observed dose rather than a fixed starting dose, a dose
+*decrease* correctly shows as a **lighter** band, so a clinician can eyeball dose
+intensity — up or down — at a glance. In addition, every **dose change** is marked with
+a divider tick and a **dose label** (shown as a callout above the bar when the segment
+is too narrow to label inline, e.g. a short or very recent regimen).
 
 > **Typo reconciliation (important):** a single-character misspelling of a drug name
 > (e.g. "irbesart**e**n" vs "irbesart**a**n") would otherwise create a *phantom second
@@ -230,10 +232,10 @@ A deliberately stripped-down, large-font version for handing to patients:
   ("160 mg/day") only as a fallback, and everywhere a dose label is shown the tool
   now prefers the actual frequency the clinician typed in the Notes (e.g. "20 mg bid").
 - **`STARTING_DOSES`** table (valsartan, candesartan, irbesartan, metoprolol) is **not**
-  patient data — it is a small reference table of standard starting doses used only to
-  calibrate medication-bar shading (darker = higher dose vs. a typical start). For any
-  drug not in the table, shading is calibrated to the lowest dose seen in the data.
-  *Enhancement, not a defect:* could be expanded to more drugs or made user-editable.
+  patient data — a small reference table of standard starting doses. It is **no longer
+  used for the med-bar shading** (shading now anchors to each drug's lowest *observed*
+  dose, per §6), so `getStartingDose`/`STARTING_DOSES` are now effectively unused except
+  for the Embedded Rules display. Could be removed in a future cleanup.
 
 ### B. Consistency issues ("the same rule written in two places")
 - **Morning/evening cutoff:** the clinician page lets you configure when "morning"

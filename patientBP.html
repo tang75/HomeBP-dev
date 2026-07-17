@@ -566,8 +566,14 @@
     const xOf=t=>PAD.l+((t-xMinMs)/Math.max(1,xMaxMs-xMinMs))*plotW;
     const SHORT_BAR_DAYS=5;
 
-    const startDose = {};
-    for(const med of meds)startDose[med]=getStartingDose(med,intervals[med]||[]);
+    // Shading reference = each drug's LOWEST observed daily dose, so the shade spans
+    // the patient's own dose range up to 4-fold (lightest = lowest dose, darkest = 4×+),
+    // making dose DECREASES visibly lighter (not just increases darker).
+    const refDose = {};
+    for(const med of meds){
+      const ds=(intervals[med]||[]).map(s=>s[2]).filter(d=>d!=null&&d>0);
+      refDose[med]=ds.length?Math.min(...ds):1;
+    }
 
     let lastLabel = {};
 
@@ -589,7 +595,7 @@
       for(const seg of segs){
         const [s,e,daily,sig,ongoing]=seg;
         if(!s||!e)continue;
-        const sd=startDose[med]||1;
+        const sd=refDose[med]||1;
         const alpha=alphaForDailyDose(daily!=null?daily:sd, sd);
         const x0=xOf(s.getTime()), x1=xOf(e.getTime());
         const widthDays=daysBetween(s,e);

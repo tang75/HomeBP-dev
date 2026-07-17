@@ -1118,7 +1118,8 @@
     const displayW = container.clientWidth - 4;
     const meds = getMedOrder(intervals);
     const n = Math.max(1, meds.length);
-    const displayH = Math.max(60, n*24+16);
+    const MED_LABEL_H = 12, MED_BAR_H = 18, MED_ROW_GAP = 6, MED_ROW_H = MED_LABEL_H + MED_BAR_H + MED_ROW_GAP;
+    const displayH = Math.max(60, n*MED_ROW_H + 8);
     canvas.style.height = displayH+'px';
     const ctx = setupCanvas(canvas, displayW, displayH);
     const W=displayW, H=displayH;
@@ -1135,8 +1136,6 @@
 
     const plotW=W-PAD.l-PAD.r;
     const xOf=t=>PAD.l+((t-xMinMs)/Math.max(1,xMaxMs-xMinMs))*plotW;
-    const rowH = (H-8)/n;
-    const gap=3, bandH=rowH-gap;
     const SHORT_BAR_DAYS=5;
 
     const startDose = {};
@@ -1146,15 +1145,20 @@
 
     for(let i=0;i<meds.length;i++){
       const med=meds[i];
-      const y0=5+i*rowH;
-      const yCenter=y0+bandH/2;
+      const rowTop = 4 + i*MED_ROW_H;
+      const y0 = rowTop + MED_LABEL_H;          // bar top (callout lane sits above)
+      const bandH = MED_BAR_H;
+      const yCenter = y0 + bandH/2;
+      const calloutBaseline = rowTop + MED_LABEL_H - 3;
       const baseColor=getMedColor(med);
 
       // Med name
       ctx.fillStyle='rgba(0,0,0,.85)';ctx.font='bold 10px system-ui';ctx.textAlign='left';
       ctx.fillText(med, 6, yCenter+4);
 
-      for(const seg of (intervals[med]||[])){
+      const segs = intervals[med]||[];
+      let prevX1=null, prevDaily=null, calloutRight=-Infinity;
+      for(const seg of segs){
         const [s,e,daily,sig,ongoing]=seg;
         if(!s||!e)continue;
         const sd=startDose[med]||1;
@@ -1162,13 +1166,23 @@
         const x0=xOf(s.getTime()), x1=xOf(e.getTime());
         const widthDays=daysBetween(s,e);
 
+        const clampX0 = Math.max(x0, PAD.l);
+        const clampX1 = Math.min(x1, W - PAD.r);
+        if (clampX1 <= clampX0) { prevX1=x1; prevDaily=daily; continue; } // outside/zero-width
+
         // Draw bar (clamp to visible plot area)
         const [cr,cg,cb]=hexToRgb01(baseColor);
         ctx.fillStyle=`rgba(${Math.round(cr*255)},${Math.round(cg*255)},${Math.round(cb*255)},${alpha})`;
-        const clampX0 = Math.max(x0, PAD.l);
-        const clampX1 = Math.min(x1, W - PAD.r);
-        if (clampX1 <= clampX0) continue; // segment entirely outside visible range
         ctx.fillRect(clampX0, y0, clampX1-clampX0, bandH);
+
+        // Dose-change divider: contiguous with the previous segment AND the dose changed.
+        // (Hold-day splits keep the same dose → no divider.)
+        const isChange = (prevDaily != null && daily != null && daily !== prevDaily);
+        const contiguous = (prevX1 != null && Math.abs(x0 - prevX1) <= 2);
+        if (isChange && contiguous && clampX0 > PAD.l + 0.5) {
+          ctx.strokeStyle='rgba(0,0,0,.6)'; ctx.lineWidth=1.5;
+          ctx.beginPath(); ctx.moveTo(clampX0, y0); ctx.lineTo(clampX0, y0+bandH); ctx.stroke();
+        }
 
         // For ongoing meds, draw a right-pointing arrow (only if end is within visible area)
         if (ongoing && x1 < W - PAD.r) {
@@ -1184,19 +1198,31 @@
         lastLabel[med]=label;
         medBarRegions.push({ x0: clampX0, x1: clampX1, y0, y1: y0 + bandH, med, label, start: s, end: e, daily, ongoing: !!ongoing });
 
-        if(!label)continue;
-
-        const midX=(clampX0+clampX1)/2;
-        const clampedWidth = clampX1 - clampX0;
-        const visibleDays = widthDays * (clampedWidth / Math.max(x1 - x0, 1));
-        ctx.font='bold 9px system-ui';
-        const labelW = ctx.measureText(label).width;
-        if(visibleDays>=SHORT_BAR_DAYS && clampedWidth >= labelW + 6){
-          // Label fits inside the bar — show it; otherwise rely on hover
-          const tc=chooseSigTextColor(baseColor,alpha);
-          ctx.fillStyle=tc;ctx.textAlign='center';
-          ctx.fillText(label, midX, yCenter+3);
+        if(label){
+          const midX=(clampX0+clampX1)/2;
+          const clampedWidth = clampX1 - clampX0;
+          const visibleDays = widthDays * (clampedWidth / Math.max(x1 - x0, 1));
+          ctx.font='bold 9px system-ui';
+          const labelW = ctx.measureText(label).width;
+          if(visibleDays>=SHORT_BAR_DAYS && clampedWidth >= labelW + 6){
+            // Label fits inside the bar
+            const tc=chooseSigTextColor(baseColor,alpha);
+            ctx.fillStyle=tc;ctx.textAlign='center';
+            ctx.fillText(label, midX, yCenter+3);
+          } else if (isChange || ongoing) {
+            // Too narrow to label inline, but it's a dose CHANGE or the current dose:
+            // draw a callout above the bar with a leader tick, nudged to avoid overlap.
+            let cx = Math.max(clampX0, calloutRight + 4);
+            cx = Math.min(cx, W - PAD.r - labelW);
+            cx = Math.max(cx, PAD.l);
+            ctx.fillStyle='rgba(0,0,0,.8)'; ctx.textAlign='left';
+            ctx.fillText(label, cx, calloutBaseline);
+            ctx.strokeStyle='rgba(0,0,0,.3)'; ctx.lineWidth=1;
+            ctx.beginPath(); ctx.moveTo(clampX0, y0); ctx.lineTo(clampX0, calloutBaseline+2); ctx.stroke();
+            calloutRight = cx + labelW;
+          }
         }
+        prevX1=x1; prevDaily=daily;
       }
     }
   }

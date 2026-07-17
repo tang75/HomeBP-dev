@@ -146,7 +146,12 @@ which drug, what daily dose, from when to when.
 It handles: start / stop / increase / decrease / titrate language; dose-frequency
 abbreviations (qd, bid, tid, qid, qhs); converting "80 mg bid" into a 160 mg/day total;
 and drug-name typos. Each medication is then drawn as a horizontal bar whose **color
-identifies the drug** and whose **shading darkens with higher dose**.
+identifies the drug** and whose **shading darkens with higher dose**. Every **dose
+change** is marked with a divider tick on the bar and a **dose label**; when a segment
+is too narrow to hold the label inline (a short or very recent regimen), the dose is
+shown as a **callout above the bar**. This matters because the shading alone can't show
+a dose *decrease* below the starting dose (both render at the lightest shade), so the
+divider + label is what makes a decrease like 150→75 mg visible.
 
 > **Typo reconciliation (important):** a single-character misspelling of a drug name
 > (e.g. "irbesart**e**n" vs "irbesart**a**n") would otherwise create a *phantom second

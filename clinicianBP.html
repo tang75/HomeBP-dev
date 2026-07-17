@@ -1698,9 +1698,9 @@
     }
     if (phaseGroups.length < 2) { compContainer.innerHTML = ''; return; }
 
-    // New ranking: score = (%at goal) - (%severe) - 5×(hold count). Higher = better.
+    // Ranking: score = (%at goal) + ½×(%near goal) − (%very high) − 3×(hold count). Higher = better.
     const scored = phaseGroups.map(p => {
-      const score = p.green - p.severe - 5 * p.holdCount;
+      const score = p.green + 0.5 * p.near - p.severe - 3 * p.holdCount;
       return { ...p, score };
     });
     scored.sort((a, b) => b.score - a.score); // descending: highest score = best
@@ -1710,7 +1710,10 @@
     const maxHolds = Math.max(...scored.map(p => p.holdCount));
 
     let compHtml = '<div class="hr"></div>';
-    compHtml += `<div style="font-weight:650; font-size:14px; margin-bottom:8px; color:var(--accent);">Treatment Plan Comparison <span style="font-weight:400; font-size:12px; color:#1a73e8;">· last ${recentWeeks} wk${recentWeeks>1?'s':''} per phase</span></div>`;
+    compHtml += `<div style="display:flex; justify-content:space-between; align-items:baseline; flex-wrap:wrap; gap:10px; margin-bottom:8px;">`;
+    compHtml += `<div style="font-weight:650; font-size:14px; color:var(--accent);">Treatment Plan Comparison <span style="font-weight:400; font-size:12px; color:#1a73e8;">· last ${recentWeeks} wk${recentWeeks>1?'s':''} per phase</span></div>`;
+    compHtml += `<div style="font-size:12px; color:var(--muted); background:rgba(0,0,0,.04); border:1px solid rgba(0,0,0,.10); border-radius:8px; padding:5px 12px;"><b>Score</b> = <span style="color:#1b7a3d;">(%at goal)</span> + <span style="color:#b8860b;">½&times;(%near)</span> &minus; <span style="color:#c62828;">(%very high)</span> &minus; <span style="color:#c62828;">3&times;(holds)</span> &middot; higher = better</div>`;
+    compHtml += `</div>`;
 
     // Mini legend for stacked bar colors
     compHtml += `<div style="display:flex; gap:14px; margin-bottom:8px; font-size:11px; color:var(--muted);">`;
@@ -1793,11 +1796,6 @@
       compHtml += '</tr>';
     });
     compHtml += '</tbody></table>';
-
-    // Methodology
-    compHtml += '<div class="muted" style="font-size:10px; margin-top:6px; line-height:1.4;">';
-    compHtml += 'Score = <span style="color:#1b7a3d;">(%at goal)</span> &minus; <span style="color:#c62828;">(%very high)</span> &minus; <span style="color:#c62828;">5&times;(holds)</span>. Higher = better.';
-    compHtml += '</div>';
 
     // Best-is-not-current warning
     const bestIsLast = best.label === phaseGroups[phaseGroups.length - 1].label;
@@ -2865,7 +2863,7 @@
           `<b>Per-window phase rows (AM/PM table):</b> For each phase, uses the last N=${N} readings that fall within that phase's actual start–end range (ignores Lookback setting)`,
           `<b>Stacked distribution bar:</b> Each row shows a stacked bar with 5 categories: Low (purple, SBP < ${thr.lowSys} or DBP < ${thr.lowDia}), At Goal (green, SBP < ${goal.sys} and DBP < ${goal.dia}), Near Goal (amber, within 2 mmHg of goal but not at goal), Above Goal (red, above near-goal threshold), Very High (hatched red, SBP ≥ ${thr.severeSys} or DBP ≥ ${thr.severeDia})`,
           `<b>Percentage labels:</b> Shown inside segments ≥ 6%. Segments 1–5% show labels below the bar in the segment's color. Segments < 1% are hidden`,
-          `<b>Scoring formula:</b> Score = (%at goal) − (%very high) − 5 × (hold count). Higher = better. Uses raw hold count, not extrapolated monthly rate, to avoid disproportionate penalties for short phases`,
+          `<b>Scoring formula:</b> Score = (%at goal) + ½ × (%near goal) − (%very high) − 3 × (hold count). Higher = better. Near-goal readings earn half credit; holds use a raw count, not an extrapolated monthly rate, to avoid disproportionate penalties for short phases`,
           `<b>Ranking:</b> Phases sorted by score descending. #1 = best. Row highlighting: best row has green tint, worst row (if > 2 phases) has red tint`,
           `<b>Trophy icon:</b> Shown only for a dominant winner: ≥ 50% at goal AND score gap ≥ 20 over #2`,
           `<b>Holds column:</b> Count of "hold med" events within the phase. Highest hold count is highlighted in red bold`,

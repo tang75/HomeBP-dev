@@ -175,9 +175,12 @@ identifies the drug** and whose **shading darkens with higher dose**.
 - **Medication Response** (first section titled *"History of Response to Medication
   Regimens (Morning vs Afternoon/Evening)"*) — two tables:
   - a **phase table** showing BP statistics for each medication regimen period; and
-  - a **Treatment Plan Comparison** that ranks the regimens (a score rewarding
-    at-goal readings and penalizing severe readings and medication holds) and flags
-    the best-performing regimen.
+  - a **Treatment Plan Comparison** that ranks the regimens by a score:
+    **(%at goal) + ½ × (%near goal) − (%very high) − 3 × (hold count)**, higher = better.
+    Near-goal readings earn half credit; very-high readings and medication holds are
+    penalties (the 3× hold weight is a tunable heuristic, not a validated constant).
+    The formula legend is shown top-right of the section, and the best-scoring regimen
+    is flagged (with a "consider revisiting" note if it isn't the current one).
   - *Dose-change reconciliation:* the **current** regimen's statistics use the recent
     window **clipped to the most recent dose change**, so readings taken on the prior
     dose are never counted under the new regimen. (Historical phases were already
@@ -245,8 +248,8 @@ A deliberately stripped-down, large-font version for handing to patients:
   recent **TIME trial found no benefit** and is not cited. Consider softening, or
   presenting the counter-evidence.
 - **Hold-day penalty** in the regimen-ranking score weights each medication hold as
-  heavily as 5 percentage-points of at-goal readings. This coefficient is a judgment
-  call with no citation.
+  heavily as 3 percentage-points of at-goal readings (set by the clinician owner,
+  reduced from 5). This coefficient is a judgment call with no citation.
 
 ### E. Patient-view polish
 - No "your data is N days old" staleness note (the "recent 2-week" window floats off

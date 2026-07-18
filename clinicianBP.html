@@ -1947,6 +1947,15 @@
     const p = d.profile || {};
     const hasProfile = isProfileSet(p);
 
+    // Class-level intolerance flags (profile checkbox OR a drug named in free-text),
+    // so even generic/educational insights don't steer toward a class the patient
+    // can't take. The treatment-option block below builds its own avoid/caution sets.
+    const _otherLower = (p.otherIntolerance || '').toLowerCase();
+    const _named = names => names.some(dn => _otherLower.includes(dn));
+    const ccbIntolerant = !!(p.ccbEdema || _named(['amlodipine','nifedipine','felodipine','diltiazem','verapamil']));
+    const arbIntolerant = !!(p.pregnancy || _named(['valsartan','losartan','candesartan','irbesartan','telmisartan','olmesartan']));
+    const aceiIntolerant = !!(p.angioedemaHistory || p.aceiCough || p.pregnancy || _named(['lisinopril','enalapril','ramipril','captopril','benazepril','fosinopril','quinapril','perindopril']));
+
     // ── KNOWN DRUG CLASSES for mechanism-based reasoning ──
     const DRUG_CLASSES = {
       'arb': { drugs: ['valsartan','losartan','candesartan','irbesartan','telmisartan','olmesartan','azilsartan'], label: 'ARB', mechanism: 'Angiotensin II receptor blockade → vasodilation, reduced aldosterone' },
@@ -2070,12 +2079,12 @@
     // 1e. Morning-specific severity
     if (d.mornSevPct != null && d.mornSevPct >= 15 && (d.aeSevPct == null || d.mornSevPct > d.aeSevPct + 10)) {
       insights.push({ category: 'BP Patterns', priority: 2, icon: '🌅',
-        text: `<b>Morning very high spike pattern:</b> ${d.mornSevPct.toFixed(0)}% of morning readings are very high vs ${(d.aeSevPct||0).toFixed(0)}% afternoon/evening. Morning BP surge is an independent CVA risk factor.${cite('Kario')} Consider bedtime dosing of long-acting ARB or CCB.` });
+        text: `<b>Morning very high spike pattern:</b> ${d.mornSevPct.toFixed(0)}% of morning readings are very high vs ${(d.aeSevPct||0).toFixed(0)}% afternoon/evening. Morning BP surge is an independent CVA risk factor.${cite('Kario')} Consider bedtime dosing of ${ccbIntolerant && arbIntolerant ? 'a long-acting antihypertensive' : ccbIntolerant ? 'a long-acting ARB' : arbIntolerant ? 'a long-acting CCB' : 'a long-acting ARB or CCB'}.` });
     }
 
     // 1f. Isolated systolic hypertension
     if (overallSBP != null && overallSBP >= d.goal.sys + 5 && overallDBP < d.goal.dia) {
-      let ishText = `<b>Isolated systolic hypertension:</b> SBP ${overallSBP} above target while DBP ${overallDBP} is at goal. Responds best to CCBs and thiazide-like diuretics.${cite('ALLHAT')}${cite('ISH')}`;
+      let ishText = `<b>Isolated systolic hypertension:</b> SBP ${overallSBP} above target while DBP ${overallDBP} is at goal. Responds best to ${ccbIntolerant ? 'thiazide-like diuretics (CCBs are also first-line for ISH but avoided here given documented CCB intolerance)' : 'CCBs and thiazide-like diuretics'}.${cite('ALLHAT')}${cite('ISH')}`;
       if (p.age != null && p.age >= 65) {
         ishText += ` In elderly (age ${p.age}), ISH is driven by arterial stiffening. Caution with excessive DBP lowering (&lt;65 mmHg) — J-curve risk for coronary perfusion.${cite('JCurve')} Start low, go slow.`;
       }
@@ -2098,7 +2107,7 @@
       const sbpSD = stddev(sbpValues);
       if (sbpSD >= 18) {
         insights.push({ category: 'BP Patterns', priority: 2, icon: '📈',
-          text: `<b>High BP variability:</b> SBP SD = ${sbpSD.toFixed(1)} mmHg. Visit-to-visit variability >15 mmHg is an independent stroke risk factor.${cite('Rothwell')} CCBs tend to reduce BP variability more than other classes.` });
+          text: `<b>High BP variability:</b> SBP SD = ${sbpSD.toFixed(1)} mmHg. Visit-to-visit variability >15 mmHg is an independent stroke risk factor.${cite('Rothwell')} ${ccbIntolerant ? 'CCBs typically reduce BP variability more than other classes, but this patient has a documented CCB intolerance — consider alternatives.' : 'CCBs tend to reduce BP variability more than other classes.'}` });
       } else if (sbpSD >= 14) {
         insights.push({ category: 'BP Patterns', priority: 3, icon: '📈',
           text: `<b>Moderate BP variability:</b> SBP SD = ${sbpSD.toFixed(1)} mmHg. Evaluate adherence patterns, white-coat effect, and medication timing consistency.` });
@@ -2239,7 +2248,7 @@
         // Diabetes without RAAS blockade
         if (p.diabetes && !currentClassSet.has('arb') && !currentClassSet.has('acei') && overallSBP > d.goal.sys) {
           insights.push({ category: 'Med Correlations', priority: 2, icon: '💡',
-            text: `<b>Diabetes without RAAS blockade:</b> Patient has diabetes but is not on ACEi or ARB. RAAS blockade is first-line for diabetic nephropathy prevention.${cite('HOPE')}` });
+            text: `<b>Diabetes without RAAS blockade:</b> Patient has diabetes but is not on ACEi or ARB. RAAS blockade is first-line for diabetic nephropathy prevention.${cite('HOPE')}${aceiIntolerant && arbIntolerant ? ' <i>However, this patient is intolerant to both ACEi and ARB — consider other classes and, if RAAS is essential, specialist input.</i>' : aceiIntolerant ? ' <i>Use an ARB (ACEi intolerance documented).</i>' : arbIntolerant ? ' <i>Use an ACEi (ARB not suitable here).</i>' : ''}` });
         }
       }
 

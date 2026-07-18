@@ -2246,8 +2246,17 @@
       // Missing guideline-preferred classes (generic, non-profile)
       if (overallSBP != null && overallSBP > d.goal.sys) {
         if (!currentClassSet.has('ccb') && !currentClassSet.has('diuretic') && classes.length < 3) {
-          insights.push({ category: 'Med Correlations', priority: 3, icon: '💡',
-            text: `<b>Guideline consideration:</b> Current regimen does not include a CCB or diuretic. Per AHA/ACC, thiazide-like diuretics and CCBs are first-line with strong CVA/MI risk reduction evidence, particularly for isolated systolic HTN.${cite('AHA2017')}${cite('ALLHAT')}` });
+          // Respect documented CCB intolerance (edema, or a CCB named in free-text) —
+          // don't tout CCBs as first-line; pivot to a thiazide-like diuretic.
+          const otherLower = (p.otherIntolerance || '').toLowerCase();
+          const ccbIntolerant = p.ccbEdema || ['amlodipine','nifedipine','felodipine','diltiazem','verapamil'].some(dn => otherLower.includes(dn));
+          if (ccbIntolerant) {
+            insights.push({ category: 'Med Correlations', priority: 3, icon: '💡',
+              text: `<b>Guideline consideration:</b> Current regimen includes neither a CCB nor a diuretic. Per AHA/ACC both are first-line, but this patient has a <b>documented CCB intolerance</b> — so a <b>thiazide-like diuretic</b> (e.g. chlorthalidone) is the guideline-preferred addition here${p.gout ? ' (use caution given gout)' : ''}. Avoid CCBs.${cite('AHA2017')}${cite('ALLHAT')}` });
+          } else {
+            insights.push({ category: 'Med Correlations', priority: 3, icon: '💡',
+              text: `<b>Guideline consideration:</b> Current regimen does not include a CCB or diuretic. Per AHA/ACC, thiazide-like diuretics and CCBs are first-line with strong CVA/MI risk reduction evidence, particularly for isolated systolic HTN.${cite('AHA2017')}${cite('ALLHAT')}` });
+          }
         }
       }
     }

@@ -188,6 +188,13 @@ is too narrow to label inline, e.g. a short or very recent regimen).
     penalties (the 3× hold weight is a tunable heuristic, not a validated constant).
     The formula legend is shown top-right of the section, and the best-scoring regimen
     is flagged (with a "consider revisiting" note if it isn't the current one).
+  - *AM / PM split:* each regimen's distribution is drawn as **two paired sub-bars —
+    AM (Morning) and PM (Afternoon/Evening)** — so a circadian difference (e.g. good
+    morning control but poor evening control) is visible per regimen instead of being
+    averaged away. Both sub-bars come from the **same** per-regimen window, then split
+    by time-of-day, so their counts always sum to that regimen's total. Each sub-bar's
+    percentages are of its own n. The **Score still uses the pooled AM+PM** distribution
+    (noted in the legend), so ranking reflects overall control.
   - *Dose-change reconciliation:* the **current** regimen's statistics use the recent
     window **clipped to the most recent dose change**, so readings taken on the prior
     dose are never counted under the new regimen. (Historical phases were already
